@@ -13,7 +13,7 @@ def generate_launch_description():
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
-            arguments = ['0.12', '0.28495', '0.068', '0', '0', '1.5708', 'map', 'calibration_target']
+            arguments = ['0.12', '0.28495', '0.068', '1.5708', '0', '0', 'map', 'calibration_target']
         ),
         Node(
             package='tetherbot_optitrack',
