@@ -24,10 +24,6 @@ from .can_network_motor_controller_window import CanNetworkMotorControllerWindow
 from .gripper_window import GripperWindow
 from .sequencer_window import SequencerWindow
 
-sys.path.append(os.path.join(get_package_prefix('tetherbot_gui'), 'lib/python3.8/site-packages/tetherbot_gui'))
-# NOTE: tbotlib's load function is based on pickle, which has to import tbotlib in order to function
-#       we add the path to the tbotlib inside the tetherbot install to make tbotlib importable
-
 class App(tk.Tk):
     # A class representing an application
 

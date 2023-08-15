@@ -49,8 +49,8 @@ def generate_launch_description():
 
     executables = []
 
-    planner_config_path = os.path.join(get_package_share_directory('tbotros_config'), 'config')
-    tbot_desc_path = os.path.join(get_package_share_directory('tbotros_description'), 'desc')
+    planner_config_path = os.path.join(get_package_share_directory('tbotros_config'), 'config/planner.yaml')
+    tbot_desc_path = os.path.join(get_package_share_directory('tbotros_description'), 'desc/tetherbot_light.pkl')
 
     # path planner
     executables.append(Node(
