@@ -14,10 +14,10 @@ from tbotlib import TbTetherbot
 # https://github.com/ros-planning/navigation2/blob/main/nav2_bringup/launch/multi_tb3_simulation_launch.py
 
 enable_tf = True
-enable_zed = False
+enable_zed = False 
 enable_cameras = False
-enable_motors = True
-enable_servos = True
+enable_motors = False
+enable_servos = False
 enable_arm = True
 enable_grippers = True
 enable_platform = True
@@ -46,7 +46,8 @@ def generate_launch_description():
     tbot: TbTetherbot = TbTetherbot.load(os.path.join(desc_path, 'tetherbot_light.pkl'))
     with open(os.path.join(desc_path, 'tetherbot.urdf'), 'r') as infp: 
         robot_desc = infp.read()
-
+    print(robot_desc)
+    print()
     # === TF ===
     if enable_tf: 
         # robot state publisher
@@ -145,9 +146,7 @@ def generate_launch_description():
     if enable_motors:
         executables.append(Node(
             package = 'canopen_network',
-            executable = 'canopen_network',
-            parameters = [{'config_file': os.path.join(config_path, 'can.yaml')}]
-        ))
+            executable = 'canopen_network'))
 
     # === GRIPPERS ===
     if enable_grippers:
@@ -164,6 +163,7 @@ def generate_launch_description():
                 parameters = [{'config_file': os.path.join(config_path, 'tetherbot_light.pkl'),
                                'gripper_id': tbot.grippers[i].name,
                                'hold_id': str(i),
+                               'config_file': os.path.join(desc_path, 'tetherbot_light.pkl'), 
                                'default_transform_source': 'marker',
                                'marker_frame_id': 'camera' + str(i) + '_marker'}]))
             
@@ -258,6 +258,7 @@ def generate_launch_description():
         # tetherbot visualization publisher for tethers etc...
         executables.append(Node(
             package = 'tetherbot_control',
+            parameters = [{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl')}],
             executable = 'tetherbot_control_visualization_publisher'
         ))
 
