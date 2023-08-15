@@ -1,0 +1,92 @@
+from __future__ import annotations
+
+import os
+import sys
+from launch import LaunchDescription, logging
+from launch.actions import IncludeLaunchDescription
+from launch_ros.actions import Node
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_prefix, get_package_share_directory
+
+# LINKS:
+# https://answers.ros.org/question/374926/ros2-how-to-launch-rviz2-with-config-file/
+# https://github.com/ros-planning/navigation2/blob/main/nav2_bringup/launch/multi_tb3_simulation_launch.py
+
+commands_path = '/home/climb/ros2_ws/command/command.pkl'
+
+logging.get_logger('launch').info(''' 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  %%%%%%       %%%%%%%%%%%%%  
+ %%%                      %%%%
+ %%%                       %%%
+  %%%%%%%%%%%%%           %%%%
+     %%%%%%%%%%%%%   %%%%%%%  
+                %%%   %%%%    
+               %%%%     %%%    Space Robotics Laboratory
+  %%%%%%%%%%%%%%%        %%%%  Kyushu Institute of Technology
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+ 
+ Climbing Robots Research Group
+ ROS2 Tether Climbing Robot Software
+ Tetherbot Master - Ground Station Launcher
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+''')
+                                  
+def action_remap(_from: str, _to: str) -> list[tuple]:
+
+    return [(_from + '/_action/feedback', _to + '/_action/feedback'),
+            (_from + '/_action/status', _to + '/_action/status'),
+            (_from + '/_action/cancel_goal', _to + '/_action/cancel_goal'),
+            (_from + '/_action/get_result', _to + '/_action/get_result'),
+            (_from + '/_action/send_goal', _to + '/_action/send_goal')]
+
+def generate_launch_description():
+
+    executables = []
+
+    planner_config_path = os.path.join(get_package_share_directory('tbotros_config'), 'config/planner.yaml')
+    tbot_desc_path = os.path.join(get_package_share_directory('tbotros_description'), 'desc/tetherbot_light.pkl')
+
+    # path planner
+    executables.append(Node(
+        package = 'tetherbot_planner',
+        executable = 'tetherbot_planner',
+        parameters = [{'commands_path': commands_path,
+                       'planner_config_path': planner_config_path}]
+    ))
+
+    # command sequencer
+    executables.append(Node(
+        package = 'tetherbot_sequencer',
+        executable = 'tetherbot_sequencer',
+        parameters = [{'commands_path': commands_path}]
+    ))
+
+    # user interface
+    try:
+        get_package_prefix('tetherbot_gui')
+    except LookupError:
+        pass
+    else:
+        executables.append(Node(
+        package = 'tetherbot_gui',
+        executable = 'tetherbot_gui',
+        parameters = [{'config_path': tbot_desc_path}]
+    ))
+
+    # optitrack
+    try:
+        get_package_prefix('tetherbot_optitrack')
+    except LookupError:
+        pass
+    else:
+        executables.append(IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(get_package_share_directory('tetherbot_optitrack'), 'launch', 'tetherbot_optitrack.launch.xml'))))
+
+    return LaunchDescription(executables)
