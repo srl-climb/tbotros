@@ -46,8 +46,7 @@ def generate_launch_description():
     tbot: TbTetherbot = TbTetherbot.load(os.path.join(desc_path, 'tetherbot_light.pkl'))
     with open(os.path.join(desc_path, 'tetherbot.urdf'), 'r') as infp: 
         robot_desc = infp.read()
-    print(robot_desc)
-    print()
+  
     # === TF ===
     if enable_tf: 
         # robot state publisher
