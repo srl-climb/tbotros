@@ -1,0 +1,17 @@
+<launch>
+    <!-- Optitrack Client Script -->
+    <include file="$(find-pkg-share tetherbot_optitrack)/launch/optitrack.launch.py"/>
+
+    <!-- Transformations -->
+    <include file="$(find-pkg-share tetherbot_optitrack)/launch/tetherbot_optitrack_tfs.launch.py"/>
+    
+    <!-- Rviz2 
+    <let name="rviz_config" value="/home/climb/tetherbot_ws/src/tetherbot_optitrack/config/tether-rviz.rviz"/>
+    <node name="rviz2" pkg="rviz2" exec="rviz2" args="-d $(var rviz_config)"/>
+    -->
+    <!-- Script to convert data points into markers for Rviz -->
+    <node pkg="mocap_marker_viz" exec="mocap_marker_viz" name="mocap_marker_viz"/>
+
+    <node pkg="tetherbot_optitrack" exec="tetherbot_tbot_calibration" name="tetherbot_tbot_calibration"/>
+
+</launch>
