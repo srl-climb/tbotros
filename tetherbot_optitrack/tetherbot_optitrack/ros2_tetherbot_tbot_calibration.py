@@ -65,10 +65,10 @@ class ROS2TetherbotCoordinateSystemCalibrationNode(Node):
             self.transform_msg.transform.translation.x = tf.transform.translation.x
             self.transform_msg.transform.translation.y = tf.transform.translation.y
             self.transform_msg.transform.translation.z = tf.transform.translation.z
-            self.transform_msg.transform.rotation.w = tf.transform.rotation.x
-            self.transform_msg.transform.rotation.x = tf.transform.rotation.y
-            self.transform_msg.transform.rotation.y = tf.transform.rotation.z
-            self.transform_msg.transform.rotation.z = tf.transform.rotation.w
+            self.transform_msg.transform.rotation.w = tf.transform.rotation.w
+            self.transform_msg.transform.rotation.x = tf.transform.rotation.x
+            self.transform_msg.transform.rotation.y = tf.transform.rotation.y
+            self.transform_msg.transform.rotation.z = tf.transform.rotation.z
 
             self.send_static_tf()
 
