@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import os
-import sys
 from launch import LaunchDescription, logging
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, Shutdown
 from launch_ros.actions import Node
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_prefix, get_package_share_directory
@@ -13,6 +12,8 @@ from ament_index_python.packages import get_package_prefix, get_package_share_di
 # https://github.com/ros-planning/navigation2/blob/main/nav2_bringup/launch/multi_tb3_simulation_launch.py
 
 commands_path = '/home/climb/ros2_ws/command/command.pkl'
+enable_gui = True
+enable_optitrack = False
 
 logging.get_logger('launch').info(''' 
 
@@ -57,6 +58,7 @@ def generate_launch_description():
         package = 'tetherbot_planner',
         executable = 'tetherbot_planner',
         parameters = [{'commands_path': commands_path,
+                       'config_file': tbot_desc_path,
                        'planner_config_path': planner_config_path}]
     ))
 
@@ -64,29 +66,24 @@ def generate_launch_description():
     executables.append(Node(
         package = 'tetherbot_sequencer',
         executable = 'tetherbot_sequencer',
-        parameters = [{'commands_path': commands_path}]
+        parameters = [{'commands_path': commands_path,
+                       'config_file': tbot_desc_path}]
     ))
 
     # user interface
-    try:
-        get_package_prefix('tetherbot_gui')
-    except LookupError:
-        pass
-    else:
+    if enable_gui:
         executables.append(Node(
-        package = 'tetherbot_gui',
-        executable = 'tetherbot_gui',
-        parameters = [{'config_path': tbot_desc_path}]
-    ))
+            package = 'tetherbot_gui',
+            executable = 'tetherbot_gui',
+            on_exit = Shutdown(),
+            parameters = [{'config_path': tbot_desc_path}]
+        ))
 
     # optitrack
-    try:
-        get_package_prefix('tetherbot_optitrack')
-    except LookupError:
-        pass
-    else:
+    if enable_optitrack:
         executables.append(IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                os.path.join(get_package_share_directory('tetherbot_optitrack'), 'launch', 'tetherbot_optitrack.launch.xml'))))
+                os.path.join(get_package_share_directory('tetherbot_optitrack'), 'launch', 'tetherbot_optitrack.launch.xml'))
+            ))
 
     return LaunchDescription(executables)
