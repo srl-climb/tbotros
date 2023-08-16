@@ -16,7 +16,7 @@ from tbotlib import TbTetherbot
 enable_tf = True
 enable_zed = False 
 enable_cameras = False
-enable_motors = False
+enable_motors = True
 enable_servos = False
 enable_arm = True
 enable_grippers = True
