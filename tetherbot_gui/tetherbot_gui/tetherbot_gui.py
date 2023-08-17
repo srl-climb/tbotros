@@ -168,15 +168,15 @@ class App(tk.Tk):
                     window.set_data(window_data['data'])
         # Load the save data and create windows based on the data
 
-    def open_window_callback(self, string: str):
+    def open_window_callback(self, window_cls: type[Window]):
         # Callback function for opening a window
 
         for window in self.windows:
-            if type(window) == getattr(sys.modules[__name__], string):
+            if type(window) is window_cls:
                 self.bring_window_to_front(window)
                 return
 
-        self.add_window(string)
+        self.add_window(window_cls)
         # Check if the window is already open, if not, add a new window
 
     def close_windows_callback(self):
