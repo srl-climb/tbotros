@@ -14,6 +14,7 @@ from ament_index_python.packages import get_package_prefix, get_package_share_di
 commands_path = '/home/climb/ros2_ws/command/command.pkl'
 enable_gui = True
 enable_optitrack = False
+enable_rviz = True
 
 logging.get_logger('launch').info(''' 
 
@@ -84,6 +85,16 @@ def generate_launch_description():
         executables.append(IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(get_package_share_directory('tetherbot_optitrack'), 'launch', 'tetherbot_optitrack.launch.xml'))
+            ))
+        
+    # rviz
+    if enable_rviz:
+        executables.append(Node(
+            package='rviz2',
+            namespace='',
+            executable='rviz2',
+            name='rviz2',
+            arguments=['-d' + os.path.join(get_package_share_directory('tbotros_config'), 'config', 'rviz.rviz')]
             ))
 
     return LaunchDescription(executables)
