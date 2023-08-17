@@ -62,6 +62,7 @@ class CanNetworkMotorControllerWindow(Window):
         self.enable_operation_nodes: list[ClientNode] = []
         self.quick_stop_nodes: list[ClientNode] = []
         self.fault_reset_nodes: list[ClientNode] = []
+        self.save_home_nodes: list[ClientNode] = []
         self.move_action_nodes: list[ActionClientNode] = []
 
         # Iterate through each motor namespace
@@ -100,6 +101,8 @@ class CanNetworkMotorControllerWindow(Window):
                                                                  srv_type=Trigger))
             self.fault_reset_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/fault_reset',
                                                                   srv_type=Trigger))
+            self.save_home_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/save_home',
+                                                                srv_type=Trigger))
             self.move_action_nodes.append(self.create_action_client_node(action_name=self._motor_namespaces[i] + '/faulhaber_motor/move',
                                                                          action_type=MoveMotor))
             
@@ -254,33 +257,37 @@ class CanNetworkMotorControllerWindow(Window):
             self.message_labels.append(label)
 
             command = lambda node = self.shut_down_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            self.shut_down_button = self.create_button(master = service_frame, width = 13, command = command, text = 'Shut Down')
-            self.shut_down_button.grid(row = 0, column = 0)
+            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Shut Down')
+            button.grid(row = 0, column = 0)
 
             command = lambda node = self.switch_on_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            self.switch_on_button = self.create_button(master = service_frame, width = 13, command = command, text = 'Switch On')
-            self.switch_on_button.grid(row = 0, column = 1)
+            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Switch On')
+            button.grid(row = 0, column = 1)
 
             command = lambda node = self.disable_voltage_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            self.disable_voltage_button = self.create_button(master = service_frame, width = 13, command = command, text = 'Disable Voltage')
-            self.disable_voltage_button.grid(row = 1, column = 0)
+            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Disable Voltage')
+            button.grid(row = 1, column = 0)
 
             command = lambda node = self.quick_stop_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            self.quick_stop_button = self.create_button(master = service_frame, width = 13, command = command, text = 'Quick Stop')
-            self.quick_stop_button.config(bg="#FFC0CB")
-            self.quick_stop_button.grid(row = 1, column = 1)
+            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Quick Stop')
+            button.config(bg="#FFC0CB")
+            button.grid(row = 1, column = 1)
 
             command = lambda node = self.disable_operation_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            self.disable_operation_button = self.create_button(master = service_frame, width = 13, command = command, text = 'Disable Operation')
-            self.disable_operation_button.grid(row = 2, column = 0)
+            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Disable Operation')
+            button.grid(row = 2, column = 0)
 
             command = lambda node = self.enable_operation_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            self.enable_operation_button = self.create_button(master = service_frame, width = 13, command = command, text = 'Enable Operation')
-            self.enable_operation_button.grid(row = 2, column = 1)
+            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Enable Operation')
+            button.grid(row = 2, column = 1)
+
+            command = lambda node = self.save_home_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
+            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Save Home*')
+            button.grid(row = 3, column = 1)
 
             command = lambda node = self.fault_reset_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            self.fault_reset_button = self.create_button(master = service_frame, width = 13, command = command, text = 'Fault Reset')
-            self.fault_reset_button.grid(row = 3, column = 0)
+            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Fault Reset')
+            button.grid(row = 3, column = 0)
 
             action_frame = self.create_label_frame(master = motor_labelframe, text = 'Actions')
             action_frame.grid(row = 2, column = 0, columnspan=2)
@@ -374,6 +381,10 @@ class CanNetworkMotorControllerWindow(Window):
         button = self.create_button(master = service_frame, width = 13, command = command, text = 'Fault Reset')
         button.grid(row = 3, column = 0)
 
+        command = lambda nodes = self.save_home_nodes, labels = self.success_labels: self.trigger_service_button_callbacks(nodes, labels)
+        button = self.create_button(master = service_frame, width = 13, command = command, text = 'Save Home*')
+        button.grid(row = 3, column = 1)
+
         action_frame = self.create_label_frame(master = master_frame, text = 'Actions')
         action_frame.grid(row=1,column=0)
 
@@ -464,6 +475,11 @@ class CanNetworkMotorControllerWindow(Window):
 
             if not self.fault_reset_nodes[i].res_queue.empty():
                 response: Trigger.Response = self.fault_reset_nodes[i].res_queue.get()
+                self.success_labels[i].update_data(response.success)
+                self.message_labels[i].update_data(response.message)
+
+            if not self.save_home_nodes[i].res_queue.empty():
+                response: Trigger.Response = self.save_home_nodes[i].res_queue.get()
                 self.success_labels[i].update_data(response.success)
                 self.message_labels[i].update_data(response.message)
 

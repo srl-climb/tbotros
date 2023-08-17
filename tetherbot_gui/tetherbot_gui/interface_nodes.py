@@ -10,7 +10,7 @@ import rclpy
 class SubscriptionNode(Node):
     # A class representing a subscription node
 
-    def __init__(self, msg_name: str, msg_type: type, timeout_sec: float = 10):
+    def __init__(self, msg_name: str, msg_type: type, timeout_sec: float = 60):
         # Initialize the superclass node
         super().__init__('gui_subscription_node_' + str(uuid.uuid4()).replace('-',''))
         # Attach uuid to node name to ensure that the node has a unique name
@@ -58,7 +58,7 @@ class ClientNode(Node):
         self._client = self.create_client(srv_type, srv_name)
         
         # Create a timer and bind a callback function to it
-        self._timer = self.create_timer(0.3, self.timer_callback)
+        self._timer = self.create_timer(0.5, self.timer_callback)
         
         # Set the response queue for the client node
         self.res_queue = Queue(10)
@@ -115,7 +115,7 @@ class ActionClientNode(Node):
 
         self._client = ActionClient(self, action_type, action_name)
 
-        self._timer = self.create_timer(0.3, self.timer_callback)
+        self._timer = self.create_timer(0.5, self.timer_callback)
 
         self.goal_queue = Queue(10)
         self.result_queue = Queue(10)
