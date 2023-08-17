@@ -39,7 +39,7 @@ class PlatformControllerNode(BaseControllerNode):
 
         # subscription to gripper poses
         for i in range(self._tbot.k):
-            self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg: self.gripper_pose_sub_callback(msg, i), 1)
+            self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg, i=i: self.gripper_pose_sub_callback(msg, i), 1)
 
         # slack parameters of untensioned tethers
         self._slack_target = 0.01 # in meter

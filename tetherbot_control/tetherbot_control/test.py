@@ -1,7 +1,14 @@
-import numpy as np
-from multiprocessing import Process, Queue
-from time import sleep
-from launch.substitutions import LaunchConfiguration
+def func(i):
+    print(i)
+
+
+my_funcs = []
+for i in range(3):
+    my_funcs.append(lambda i=i: func(i))
+
+for my_func in my_funcs:
+    my_func()
+
 
 
     

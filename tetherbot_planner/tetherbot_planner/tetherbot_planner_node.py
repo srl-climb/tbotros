@@ -55,8 +55,8 @@ class PlannerNode(Node):
         self.create_subscription(PoseStamped, self._tbot.platform.name + '/platform_state_publisher/pose', self.platform_pose_sub_callback, 1)
         self.create_subscription(Float64Array, self._tbot.platform.arm.name + '/arm_state_publisher/joint_states', self.arm_joint_states_sub_callback, 1)
         for i in range(self._tbot.k):
-            self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg: self.gripper_pose_sub_callback(msg, i), 1)
-            self.create_subscription(Int64, self._tbot.grippers[i].name + '/gripper_state_publisher/hold_index', lambda msg: self.gripper_hold_index_sub_callback(msg, i), 1)
+            self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg, i=i: self.gripper_pose_sub_callback(msg, i), 1)
+            self.create_subscription(Int64, self._tbot.grippers[i].name + '/gripper_state_publisher/hold_index', lambda msg, i=i: self.gripper_hold_index_sub_callback(msg, i), 1)
         # services
         self.create_service(Empty, self.get_name() + '/display_state', self.display_state_srv_callback)
         self.create_service(Empty, self.get_name() + '/display_commands', self.display_commands_srv_callback)

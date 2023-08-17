@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import rclpy
 import rclpy.time
+import numpy as np
 from tbotlib import TbTetherbot
 from geometry_msgs.msg import TransformStamped, PoseStamped
 from custom_msgs.msg import MotorPosition, Float64Array
@@ -20,7 +21,7 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         
         # subscriptions
         for i in range(3):
-            self.create_subscription(MotorPosition, 'motor' + str(i) + '/position', lambda msg: self.motor_position_sub_callback(msg, i), 1)
+            self.create_subscription(MotorPosition, 'motor' + str(i) + '/position', lambda msg, i=i: self.motor_position_sub_callback(msg, i), 1)
         # publishers
         self._pose_pub = self.create_publisher(PoseStamped, self.get_name() + '/pose', 1)
         self._joint_states_pub = self.create_publisher(Float64Array, self.get_name() + '/joint_states', 1)
@@ -28,8 +29,13 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         self.create_timer(0.2, self.timer_callback)
 
     def timer_callback(self):
+        
+        self._arm.qs = self._joint_states * [np.pi/180, 1, 1]
 
-        self._arm.qs = self._joint_states
+        self.get_logger().warn(str(self._joint_states))
+        self.get_logger().warn(str(self._arm.qs))
+        self.get_logger().warn(str(self._arm.qs.astype(float)))
+        self.get_logger().warn(str(self._arm.qs.astype(float).tolist()))
 
         # publish joint states
         msg = Float64Array()
@@ -77,7 +83,8 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         self._pose_pub.publish(pose)
 
     def motor_position_sub_callback(self, msg: MotorPosition, i: int):
-
+        self.get_logger().warn('index:' + str(i))
+        self.get_logger().warn(str(msg.actual_position))
         self._joint_states[i] = msg.actual_position
 
     
