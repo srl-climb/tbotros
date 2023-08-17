@@ -32,11 +32,6 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         
         self._arm.qs = self._joint_states * [np.pi/180, 1, 1]
 
-        self.get_logger().warn(str(self._joint_states))
-        self.get_logger().warn(str(self._arm.qs))
-        self.get_logger().warn(str(self._arm.qs.astype(float)))
-        self.get_logger().warn(str(self._arm.qs.astype(float).tolist()))
-
         # publish joint states
         msg = Float64Array()
         msg.data = self._arm.qs.astype(float).tolist()
@@ -83,8 +78,7 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         self._pose_pub.publish(pose)
 
     def motor_position_sub_callback(self, msg: MotorPosition, i: int):
-        self.get_logger().warn('index:' + str(i))
-        self.get_logger().warn(str(msg.actual_position))
+
         self._joint_states[i] = msg.actual_position
 
     
