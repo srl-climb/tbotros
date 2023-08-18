@@ -12,7 +12,7 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
 
     def __init__(self):
 
-        super().__init__(node_name = 'arm_state_publisher')
+        super().__init__(node_name = 'visualization_publisher')
 
         # tb arm object for forward kinematics
         self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)

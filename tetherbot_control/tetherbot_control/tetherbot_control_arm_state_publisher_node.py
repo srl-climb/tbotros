@@ -62,7 +62,7 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         # publish end effector pose
         pose = PoseStamped()
         try:  
-            tf: TransformStamped = self._tf_buffer.lookup_transform(source_frame = 'map', target_frame = self._arm.links[2].name, time = rclpy.time.Time())
+            tf: TransformStamped = self._tf_buffer.lookup_transform(target_frame = 'map', source_frame = self._arm.links[2].name, time = rclpy.time.Time())
         except Exception as exc:
             self.get_logger().warn('Look up transform failed: ' + str(exc))
         else:   

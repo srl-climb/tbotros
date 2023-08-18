@@ -163,7 +163,7 @@ def generate_launch_description():
                                'gripper_id': tbot.grippers[i].name,
                                'hold_id': str(i),
                                'config_file': os.path.join(desc_path, 'tetherbot_light.pkl'), 
-                               'default_transform_source': 'marker',
+                               'default_transform_source': 'hold',
                                'marker_frame_id': 'camera' + str(i) + '_marker'}]))
             
             # gripper controller
