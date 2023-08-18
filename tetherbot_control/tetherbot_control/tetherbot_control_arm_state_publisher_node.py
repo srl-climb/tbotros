@@ -17,7 +17,7 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         # tb arm object for forward kinematics
         self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
         self._arm = self._tbot.platform.arm
-        self._joint_states = self._arm.qs
+        self._joint_states = np.array([0,0,0]) # in [deg, m, m]
         
         # subscriptions
         for i in range(3):
@@ -30,11 +30,11 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
 
     def timer_callback(self):
         
-        self._arm.qs = self._joint_states * [np.pi/180, 1, 1]
+        self._arm.qs = self._joint_states * [np.pi/180, 1, 1] # arm qs is in [rad, m, m]
 
         # publish joint states
         msg = Float64Array()
-        msg.data = self._arm.qs.astype(float).tolist()
+        msg.data = self._joint_states.astype(float).tolist()
         self._joint_states_pub.publish(msg)
 
         # publish transforms

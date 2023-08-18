@@ -197,6 +197,10 @@ def generate_launch_description():
             remappings = [*action_remap('/' + tbot.platform.arm.name + '/motor10/faulhaber_motor/move', '/motor10/faulhaber_motor/move'),
                           *action_remap('/' + tbot.platform.arm.name + '/motor11/faulhaber_motor/move', '/motor11/faulhaber_motor/move'),
                           *action_remap('/' + tbot.platform.arm.name + '/motor12/faulhaber_motor/move', '/motor12/faulhaber_motor/move'),
+                          ('/' + tbot.platform.arm.name + '/motor10/faulhaber_motor/target_position', '/motor10/faulhaber_motor/target_position'),
+                          ('/' + tbot.platform.arm.name + '/motor11/faulhaber_motor/target_position', '/motor11/faulhaber_motor/target_position'),
+                          ('/' + tbot.platform.arm.name + '/motor12/faulhaber_motor/target_position', '/motor12/faulhaber_motor/target_position'),
+                          ('/' + tbot.platform.arm.name + '/platform0/platform_state_publisher/pose', '/' + tbot.platform.name + '/platform_state_publisher/pose'),
                           ('/' + tbot.platform.arm.name + '/tf_static', '/tf_static'),
                           ('/' + tbot.platform.arm.name + '/tf', '/tf')]
             ))
@@ -248,6 +252,16 @@ def generate_launch_description():
                         *action_remap('/' + tbot.platform.name + '/motor7/faulhaber_motor/move', '/motor7/faulhaber_motor/move'),
                         *action_remap('/' + tbot.platform.name + '/motor8/faulhaber_motor/move', '/motor8/faulhaber_motor/move'),
                         *action_remap('/' + tbot.platform.name + '/motor9/faulhaber_motor/move', '/motor9/faulhaber_motor/move'),
+                        ('/' + tbot.platform.name + '/motor0/faulhaber_motor/target_position', '/motor0/faulhaber_motor/target_position'),
+                        ('/' + tbot.platform.name + '/motor1/faulhaber_motor/target_position', '/motor1/faulhaber_motor/target_position'),
+                        ('/' + tbot.platform.name + '/motor2/faulhaber_motor/target_position', '/motor2/faulhaber_motor/target_position'),
+                        ('/' + tbot.platform.name + '/motor3/faulhaber_motor/target_position', '/motor3/faulhaber_motor/target_position'),
+                        ('/' + tbot.platform.name + '/motor4/faulhaber_motor/target_position', '/motor4/faulhaber_motor/target_position'),
+                        ('/' + tbot.platform.name + '/motor5/faulhaber_motor/target_position', '/motor5/faulhaber_motor/target_position'),
+                        ('/' + tbot.platform.name + '/motor6/faulhaber_motor/target_position', '/motor6/faulhaber_motor/target_position'),
+                        ('/' + tbot.platform.name + '/motor7/faulhaber_motor/target_position', '/motor7/faulhaber_motor/target_position'),
+                        ('/' + tbot.platform.name + '/motor8/faulhaber_motor/target_position', '/motor8/faulhaber_motor/target_position'),
+                        ('/' + tbot.platform.name + '/motor9/faulhaber_motor/target_position', '/motor9/faulhaber_motor/target_position'),
                         ('/' + tbot.platform.name + '/tf_static', '/tf_static'),
                         ('/' + tbot.platform.name + '/tf', '/tf')]
             ))

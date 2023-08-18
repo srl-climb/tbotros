@@ -18,9 +18,12 @@ class ArmControllerNode(BaseControllerNode):
         self.create_subscription(PoseStamped, self._tbot.platform.name + '/platform_state_publisher/pose', self.platform_pose_sub_callback, 1)
         
     def control_function(self, target_pose: Pose) -> np.ndarray:
-  
-        # calculate motor positions
-        return self._tbot.platform.arm.ivk(TransformMatrix(self.pose2mat(target_pose)))
+
+        # calculate joint states (deg, m, m)
+        qs = self._tbot.platform.arm.ivk(TransformMatrix(self.pose2mat(target_pose)))
+        qs[0] = qs[0] * (180/np.pi)
+                                                         
+        return qs
     
     def platform_pose_sub_callback(self, msg: PoseStamped):
 

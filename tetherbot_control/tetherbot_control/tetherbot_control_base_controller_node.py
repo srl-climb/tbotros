@@ -15,7 +15,7 @@ from custom_actions.action import MoveMotor, MoveTetherbot
 from std_srvs.srv import Empty
 from std_msgs.msg import Bool
 from geometry_msgs.msg import Pose
-from tbotlib import TbTetherbot
+from tbotlib import TbTetherbot, TransformMatrix, TetherbotVisualizer
 from .tetherbot_control_base_node import BaseNode
 
 
@@ -51,6 +51,11 @@ class BaseControllerNode(BaseNode):
         # publishers
         self._target_pose_pub = self.create_publisher(Pose, self.get_name() + '/target_pose', 1)
         self._control_enabled_pub = self.create_publisher(Bool, self.get_name() + '/control_enabled', 1)
+        self._target_position_pubs: list[Publisher] = []
+        for name in default_motor_node_names:
+            self._target_position_pubs.append(self.create_publisher(MotorPosition, name + '/target_position', 100))
+
+        # publisher timer
         self.create_timer(0.2, self.timer_callback)
 
         # control loop timer
@@ -85,7 +90,6 @@ class BaseControllerNode(BaseNode):
         msg.data = self._control_enabled
         self._control_enabled_pub.publish(msg)
 
-
     def control_loop(self):
 
         if self._control_enabled:
@@ -102,7 +106,6 @@ class BaseControllerNode(BaseNode):
                 for target_position_pub, q in zip(self._target_position_pubs, target_positions):
                     msg = MotorPosition()
                     msg.target_position = q
-
                     target_position_pub.publish(msg)
 
     def control_function(self, target_pose: Pose) -> np.ndarray:
@@ -130,6 +133,7 @@ class BaseControllerNode(BaseNode):
        
             # execute state machine
             state = 0
+            start_time = 0
             
             while True:
                 self._rate.sleep()
@@ -137,64 +141,59 @@ class BaseControllerNode(BaseNode):
                 # initialize state machine variables
                 if state == 0:
                     self._target_pose_queue = []
-                    self._target_position_pubs: list[Publisher] = []
                     send_goal_futures: list[rclpy.Future] = []
                     state = 1
 
-                # create temporary publishers to send positions
+                # send goals to motor action servers 
                 elif state == 1:
-                    for _ in self._motor_action_clis:
-                        self._target_position_pubs.append(self.create_publisher(MotorPosition, 
-                                                                                '/target_position_' + str(uuid.uuid4()).replace('-', ''), 
-                                                                                100)) # use absolute topic name here!
+                    for motor_action_cli in self._motor_action_clis:
+                        goal = MoveMotor.Goal()
+                        goal.mode = 2           
+                        goal.profile_acceleration = float(3)
+                        goal.profile_deceleration = float(3)
+                        goal.profile_velocity = float(3)
+                        send_goal_futures.append(motor_action_cli.send_goal_async(goal))
                     state = 2
 
-                # send goals to motor action servers 
-                elif state == 2:
-                    for motor_action_cli, target_position_pub in zip(self._motor_action_clis, self._target_position_pubs):
-                        goal = MoveMotor.Goal()
-                        goal.mode = 2
-                        goal.target_position_topic = target_position_pub.topic_name             
-                        send_goal_futures.append(motor_action_cli.send_goal_async(goal))
-                    state = 3
-
                 # wait for servers to become available
-                elif state == 3:
+                elif state == 2:
                     if all([future.done() for future in send_goal_futures]):
-                        state = 4
-                    else:
                         state = 3
+                    else:
+                        state = 2
 
-                # wait for motors to subscribe
+                # get current time
+                elif state == 3:
+                    start_time = self.get_clock().now().seconds_nanoseconds()[0]
+                    state = 4
+
+                # wait for 1 s
                 elif state == 4:
-                    if all([pub.get_subscription_count() > 1 for pub in self._target_position_pubs]):
+                    if self.get_clock().now().seconds_nanoseconds()[0] - start_time >= 1:
                         state = 5
                     else:
                         state = 4
 
-                # create temporary subscription to receive poses
+                # send positions
                 elif state == 5:
                     self._target_pose_queue = self.array2poses(goal_handle.request.poses)
-                    
                     state = 6
-                    # NOTE: Subscription is created last to avoid receiving messages before they can be send to the motors
 
                 # wait for controller to empty target pose queue
                 elif state == 6:
-                    if self._target_pose_queue:
-                        state = 6
+                    if not self._target_pose_queue:
+                        goal_handle.succeed()
+                        state = 99
                     else:
-                        state = 7
+                        state = 6
 
                 # shutdown/clean up
-                elif state == 7:
+                elif state == 99:
                     self._target_pose_queue = []
                     for future in send_goal_futures:
                         if future.done():
                             future.result().cancel_goal_async()
                         future.cancel()
-                    for target_position_pub in self._target_position_pubs:
-                        target_position_pub.destroy()
                     # leave the state machine
                     break
 
@@ -203,20 +202,21 @@ class BaseControllerNode(BaseNode):
                 if move_id != self._current_move_id:
                     goal_handle.abort()
                     self.get_logger().info('Move [%s]: Aborted' %move_id)
-                    state = 7
-                # is motor action terminated unexpectedly?
-                for future in send_goal_futures:
-                    if future.done():
-                        if future.result().status > 3:
-                            goal_handle.abort()
-                            self.get_logger().error('Move [%s]: Aborted, motor action unexpectedly canceled/aborted' %move_id)
-                            state = 7
+                    state = 99
                 # is cancel requested?
-                if goal_handle.is_cancel_requested:
+                elif goal_handle.is_cancel_requested:
                     goal_handle.canceled()
                     self.get_logger().info('Move [%s]: Canceled' %move_id)
-                    state = 7
-
+                    state = 99
+                # is motor action terminated unexpectedly?
+                else:
+                    for future in send_goal_futures:
+                        if future.done():
+                            if future.result().status > 3:
+                                goal_handle.abort()
+                                self.get_logger().error('Move [%s]: Aborted, motor action unexpectedly canceled/aborted' %move_id)
+                                state = 99
+                
             return MoveTetherbot.Result()
         
     def cancel_move_callback(self, _):
@@ -236,7 +236,6 @@ class BaseControllerNode(BaseNode):
     def array2poses(self, array: np.ndarray) -> list[Pose]:
 
         array = np.reshape(array, (-1,7))
-
         poses = []
 
         for a in array:
