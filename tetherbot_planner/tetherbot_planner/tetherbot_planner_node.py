@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import rclpy
 import yaml
+import numpy as np
+import quaternion as qu
 import os
 import sys
 from typing import Tuple
@@ -16,7 +18,7 @@ from threading import Lock, Event, Thread
 from custom_actions.action import PlanTetherbot
 from custom_msgs.msg import Float64Array
 from custom_srvs.srv import SetString
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 from std_srvs.srv import Empty, Trigger
 from std_msgs.msg import Bool, Int64, String
 from tbotlib import TbTetherbot, BsplineSmoother, ProfileQPlatform, FastProfile, \
@@ -42,7 +44,15 @@ class PlannerNode(Node):
         self._commands_path = self.get_parameter('commands_path').get_parameter_value().string_value
         
         self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
-        self._tbot = TbTetherbot.example()
+
+        # intermediary objects
+        self._tbot_platform_arm_qs = self._tbot.platform.arm.qs
+        self._tbot_platform_T_local = self._tbot.platform.T_local
+        self._tbot_grippers_T_world: list[TransformMatrix] = []
+        self._tbot_grippers_hold_index: list[int] = []
+        for gripper in self._tbot.grippers:
+            self._tbot_grippers_T_world.append(gripper.T_world)
+            self._tbot_grippers_hold_index.append(0)
 
         self.load_planner_config()
 
@@ -94,24 +104,37 @@ class PlannerNode(Node):
         msg.data = self._commands_saved
         self._commands_saved_pub.publish(msg)
 
-    def arm_joint_states_sub_callback(self, msg: Float64Array):
+    def update_tbot(self):
 
-        self._tbot.platform.arm.qs = msg.data
+        self._tbot.platform.arm.qs = self._tbot_platform_arm_qs
+        self.get_logger().info(str(self._tbot_platform_arm_qs))
+        self.get_logger().info(str(self._tbot.platform.arm.qs))
+        self._tbot.platform.T_local = self._tbot_platform_T_local
+
+        for i in range(self._tbot.k):
+            self._tbot.grippers[i].T_world = self._tbot.grippers[i].T_world
+
+            if self._tbot_grippers_hold_index[i] < 0:
+                self._tbot.pick(i, correct_pose = False)
+            else:
+                self._tbot.place(i, self._tbot_grippers_hold_index[i], correct_pose = False)
+
+    def arm_joint_states_sub_callback(self, msg: Float64Array):
+        
+        self._tbot_platform_arm_qs = msg.data
+        self._tbot_platform_arm_qs[0] = self._tbot_platform_arm_qs[0] * (np.pi/180)
 
     def platform_pose_sub_callback(self, msg: PoseStamped):
 
-        self._tbot.platform.T_local = TransformMatrix(self.pose2mat(msg.pose))
+        self._tbot_platform_T_local = TransformMatrix(self.pose2mat(msg.pose))
 
     def gripper_pose_sub_callback(self, msg: PoseStamped, i: int):
 
-        self._tbot.grippers[i].T_world = TransformMatrix(self.pose2mat(msg.pose))
+        self._tbot_grippers_T_world[i] = TransformMatrix(self.pose2mat(msg.pose))
 
-    def gripper_hold_index_sub_callback(self, msg: Bool, i: int):
+    def gripper_hold_index_sub_callback(self, msg: Int64, i: int):
 
-        if msg.data < 0:
-            self._tbot.pick(i, correct_pose = True)
-        else:
-            self._tbot.place(i, msg.data, correct_pose = True)
+        self._tbot_grippers_hold_index[i] = msg.data
 
     def set_commands_path_srv_callback(self, request: SetString.Request, response: SetString.Response) -> SetString.Response:
 
@@ -141,13 +164,15 @@ class PlannerNode(Node):
         state = 0
         while True:
             self._rate.sleep()
-
+            self.get_logger().info(str(state))
             # initialize
             if state == 0:
                 request: PlanTetherbot.Goal = goal_handle.request
                 process: Process = None
                 queue: ProcessQueue = None
                 state = 1
+                # update tbot to current configuration
+                self.update_tbot()
                 if request.mode == 0: # plan platform
                     planner = self._platform2pose
                     kwargs = {'pose': TransformMatrix(request.goal_pose)}
@@ -248,7 +273,8 @@ class PlannerNode(Node):
         return CancelResponse.ACCEPT
             
     def display_state_srv_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
-    
+
+        self.update_tbot()
         thread = Thread(target = self.display_func, args = (self._tbot, self._stop_event, CommandList()))
         thread.start()
         # NOTE: The open3d functions are run in a seperate thread as using a timer_callback leads to warnings and lag
@@ -388,6 +414,19 @@ class PlannerNode(Node):
                                                           mode = data['global']['graph']['workspace']['mode']),
                                   iter_max = data['global']['graph']['iter_max']),
             localplanner = self._local_planner)
+        
+    def pose2mat(self, pose: Pose) -> np.ndarray:
+
+        T = np.eye(4)
+        T[:3,:3] = qu.as_rotation_matrix(qu.from_float_array([pose.orientation.w, 
+                                                              pose.orientation.x, 
+                                                              pose.orientation.y,
+                                                              pose.orientation.z]))
+        T[:3,3]  = np.array([pose.position.x,
+                             pose.position.y,
+                             pose.position.z])
+        
+        return T
 
     def destroy_node(self) -> bool:
 
@@ -411,5 +450,5 @@ def main(args = None):
     finally:
         rclpy.shutdown()
 
-
-        
+if __name__ == "__main__":
+    main()

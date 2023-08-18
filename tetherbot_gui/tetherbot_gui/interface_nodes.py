@@ -1,6 +1,5 @@
 from __future__ import annotations
-from queue import Queue
-from threading import Event
+from multiprocessing import Queue, Event
 from rclpy.action import ActionClient
 from rclpy.action.client import ClientGoalHandle
 from rclpy.node import Node
@@ -26,8 +25,8 @@ class SubscriptionNode(Node):
         self._msg_received = False
 
         # timeout timer
-        if self._timeout_sec > 0:
-            self.create_timer(self._timeout_sec, self.timeout_callback)
+        #if self._timeout_sec > 0:
+        #    self.create_timer(self._timeout_sec, self.timeout_callback)
 
     def subscription_callback(self, msg):
         # Callback function for the subscription

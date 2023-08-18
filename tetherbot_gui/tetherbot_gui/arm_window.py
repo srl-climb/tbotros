@@ -40,9 +40,9 @@ class ArmWindow(Window):
                                                              srv_name = self.parent.tbot.platform.arm.name + '/arm_controller/disable_control')
         self._confirm_contact_node = self.create_client_node(srv_type = EmptyService, enable_response = False,
                                                              srv_name = self.parent.tbot.platform.arm.name + '/docking_controller/confirm_contact')
-        self._open_action_node = self.create_action_client_node(action_type = EmptyAction, 
+        self._open_action_node = self.create_action_client_node(action_type = EmptyAction, enable_feedback = False,
                                                                 action_name = self.parent.tbot.platform.arm.name + '/docking_controller/open')
-        self._close_action_node = self.create_action_client_node(action_type = EmptyAction,
+        self._close_action_node = self.create_action_client_node(action_type = EmptyAction, enable_feedback = False,
                                                                  action_name = self.parent.tbot.platform.arm.name + '/docking_controller/close')
         
         state_frame = self.create_label_frame(master = self, text = 'State')

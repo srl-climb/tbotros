@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import rclpy
-import numpy as np
 from abc import ABC, abstractmethod
 from threading import Lock
 from rclpy.node import Node
@@ -22,6 +21,7 @@ class TbHandler(ABC):
         super().__init__()
 
         self.status = 0
+        self._state = 0
 
     @abstractmethod
     def execute(self) -> None:
@@ -36,6 +36,11 @@ class TbHandler(ABC):
     @abstractmethod
     def cancel(self) -> None:
         
+        pass
+
+    @abstractmethod
+    def info(self) -> str:
+
         pass
 
 
@@ -79,6 +84,10 @@ class TbServiceHandler(TbHandler):
         if self._future:
             self._future.cancel()
 
+    def info(self) -> str:
+
+        return 'service ' + self._client.srv_name
+
 
 class TbSetStringServiceHandler(TbServiceHandler):
 
@@ -107,7 +116,7 @@ class TbActionHandler(TbHandler):
         if self._state == 0:
             self.status = 2
             if self._client.server_is_ready():
-                self._send_future = self._client.send_goal(self._goal)
+                self._send_future = self._client.send_goal_async(self._goal)
                 self._state = 1
             else:
                 self._state = 0
@@ -128,9 +137,10 @@ class TbActionHandler(TbHandler):
 
         #clean up and return result status
         elif self._state == 99:
+            self.status = self._send_future.result().status
             self._state = 0
             self._send_future = None
-            self.status = self._send_future.result().status
+            
 
     def cancel(self) -> None: 
         if self._send_future:
@@ -138,6 +148,9 @@ class TbActionHandler(TbHandler):
                 self._send_future.result().cancel_goal_async()
             self._send_future.cancel()
 
+    def info(self) -> str:
+
+        return 'action ' + self._client._action_name 
 
 class TbMoveActionHandler(TbActionHandler):
 
@@ -168,17 +181,17 @@ class SequencerNode(Node):
 
         super().__init__(node_name ='sequencer')
 
-        self.declare_parameter('config_file', '/home/srl-orin/ros2_ws/config/tetherbot_light.pkl')
+        self.declare_parameter('config_file', '/home/climb/ros2_ws/src/tbotros_description/tbotros_description/desc/tetherbot/tetherbot_light.pkl')
         self._config_file = self.get_parameter('config_file').get_parameter_value().string_value
 
         self.declare_parameter('gripper_transform_source', value = 'hold')
         self._gripper_transform_source = self.get_parameter('gripper_transform_source').get_parameter_value().string_value
 
-        self.declare_parameter('commands_path', '/home/srl-orin/ros2_ws/command/command.pkl')
+        self.declare_parameter('commands_path', '/home/climb/ros2_ws/commands/commands.pkl')
         self._commands_path = self.get_parameter('commands_path').get_parameter_value().string_value
         
         self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
-        self._rate = self.create_rate(2)
+        self._rate = self.create_rate(4)
         self._busy_lock = Lock()
         self._busy = False
         self._commands = CommandList()
@@ -190,8 +203,8 @@ class SequencerNode(Node):
                      execute_callback = self.execute_sequence_execute_callback, 
                      goal_callback = self.execute_sequence_goal_callback)
 
-        self._platform_move_client = ActionClient(self, MoveTetherbot, 'platform_controller/move')
-        self._arm_move_client = ActionClient(self, MoveTetherbot, 'arm_controller/move')
+        self._platform_move_client = ActionClient(self, MoveTetherbot, self._tbot.platform.name + '/platform_controller/move')
+        self._arm_move_client = ActionClient(self, MoveTetherbot, self._tbot.platform.arm.name + '/arm_controller/move')
         self._gripper_open_clients:  list[ActionClient] = []
         self._gripper_close_clients: list[ActionClient] = []
         self._gripper_set_hold_clients: list[Client] = []
@@ -201,8 +214,8 @@ class SequencerNode(Node):
             self._gripper_open_clients.append(ActionClient(self, Empty, gripper.name + '/gripper_controller/open'))
             self._gripper_set_hold_clients.append(self.create_client(SetString, gripper.name + '/gripper_state_publisher/set_hold'))
             self._gripper_set_transform_source_clients.append(self.create_client(SetString, gripper.name + '/gripper_state_publisher/set_transform_source'))
-        self._docking_close_client = ActionClient(self, Empty, gripper.name + '/docking_controller/close')
-        self._docking_open_client = ActionClient(self, Empty, gripper.name + '/docking_controller/open')
+        self._docking_close_client = ActionClient(self, Empty, self._tbot.platform.arm.name + '/docking_controller/close')
+        self._docking_open_client = ActionClient(self, Empty, self._tbot.platform.arm.name + '/docking_controller/open')
         # services
         self.create_service(SetString, self.get_name() + '/set_commands_path', self.set_commands_path_callback)
         self.create_service(Trigger, self.get_name() + '/load_commands', self.load_commands_callback)
@@ -255,7 +268,7 @@ class SequencerNode(Node):
 
         while True:
             self._rate.sleep()
-
+            self.get_logger().info('Execute sequence: State ' + str(state))
             # initialize
             if state == 0:
                 handlers: list[TbHandler] = self.parse_commands()
@@ -272,7 +285,7 @@ class SequencerNode(Node):
             elif state == 1:
                 if handlers:
                     current_handler = handlers.pop(0)
-                    print(current_handler)
+                    self.get_logger().info('Execute sequence: Executing ' + current_handler.info())
                     state = 2
                 else:
                     current_handler = None
@@ -283,6 +296,8 @@ class SequencerNode(Node):
             # execute handler
             elif state == 2:
                 current_handler.execute()
+                self.get_logger().info('state: ' + str(current_handler._state))
+                self.get_logger().info('state: ' + str(current_handler.status))
                 if current_handler.status > 4:
                         goal_handle.abort()
                         self.get_logger().error('Execute sequence: Aborted, action unexpectedly canceled/aborted')
@@ -296,6 +311,7 @@ class SequencerNode(Node):
             elif state == 99:
                 if current_handler is not None:
                     current_handler.cancel()
+                self.get_logger().info('Execute sequence: Done')
                 break
 
             # exit conditions
@@ -318,7 +334,7 @@ class SequencerNode(Node):
         return ExecuteSequence.Result()
 
     def execute_sequence_goal_callback(self, _):
-
+        
         with self._busy_lock:
             if self._busy:
                 self.get_logger().info('Execute sequence: Goal rejected, busy')
@@ -346,18 +362,19 @@ class SequencerNode(Node):
                 # actions/services to conduct for each command
                 for command in commands:
                     # move platform
-                    if isinstance(command, CommandMovePlatform):
+                    if type(command) is CommandMovePlatform:
                         handlers.append(TbMoveActionHandler(self._platform_move_client, command._targetposes))
                     # move arm
-                    elif isinstance(command, CommandMoveArm):
+                    elif type(command) is CommandMoveArm:
+                        print('hi')
                         handlers.append(TbMoveActionHandler(self._arm_move_client, command._targetposes))
                     # pick gripper
-                    elif isinstance(command, CommandPickGripper):
+                    elif type(command) is CommandPickGripper:
                         handlers.append(TbEmptyActionHandler(self._docking_close_client))
                         handlers.append(TbEmptyActionHandler(self._gripper_open_clients[command._grip_idx])) 
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_transform_source_clients[command._grip_idx], 'arm'))  
                     # place gripper
-                    elif isinstance(command, CommandPlaceGripper):
+                    elif type(command) is CommandPlaceGripper:
                         handlers.append(TbEmptyActionHandler(self._gripper_close_clients[command._grip_idx]))
                         handlers.append(TbEmptyActionHandler(self._docking_open_client))
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_hold_clients[command._grip_idx], str(command._hold_idx)))
@@ -382,4 +399,9 @@ def main(args = None):
         pass
     finally:
         rclpy.shutdown()
+
+
+if __name__ == '__main__':
+
+    main()
 

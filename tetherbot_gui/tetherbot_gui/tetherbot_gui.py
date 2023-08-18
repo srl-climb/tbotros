@@ -10,7 +10,7 @@ import os
 import sys
 import signal
 from tkinter import filedialog
-from ament_index_python.packages import get_package_share_directory, get_package_prefix
+from ament_index_python.packages import get_package_share_directory
 from tbotlib import TbTetherbot
 from .window import Window
 from .planner_window import PlannerWindow
@@ -69,10 +69,9 @@ class App(tk.Tk):
         self.save_file = '*'
         
         # load tetherbot object from config path
-        tbot_config_path_param = rclpy.Parameter('config_path', value = '/home/climb/ros2_ws/config/tetherbot_light.pkl')
-        tbot_config_path = tbot_config_path_param.get_parameter_value().string_value
+        tbot_desc_file = os.path.join(get_package_share_directory('tbotros_description'), 'desc/tetherbot_light.pkl')
         try:
-            self.tbot: TbTetherbot = TbTetherbot.load(tbot_config_path)
+            self.tbot: TbTetherbot = TbTetherbot.load(tbot_desc_file)
         except Exception as exc:
             self.get_logger().error('Failed loading tetherbot object: ' + str(exc))
 
@@ -153,20 +152,19 @@ class App(tk.Tk):
                                                initialfile=os.path.basename(save_file))
         # Open a file dialog to choose a file to load
 
-        with open(self.save_file, 'r') as stream:
+        with open(save_file, 'r') as stream:
             try:
                 save_data = yaml.safe_load(stream)
             except Exception as exc:
                 self.get_logger().error('Error while loading project file :' + exc)
             else:
                 self.save_file = save_file
-
                 self.close_windows_callback()
-
                 for window_data in save_data['windows']:
-                    window = self.add_window(window_data['type'])
+                    window_cls = getattr(sys.modules[__name__], window_data['type'])
+                    window = self.add_window(window_cls)
                     window.set_data(window_data['data'])
-        # Load the save data and create windows based on the data
+        
 
     def open_window_callback(self, window_cls: type[Window]):
         # Callback function for opening a window

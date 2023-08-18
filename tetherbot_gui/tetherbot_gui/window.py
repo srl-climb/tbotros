@@ -38,10 +38,11 @@ class Window(tk.Toplevel):
 
         self.node_thread: Thread = None
         self.node_thread_stop_event = Event() 
-
+        
         self.create_user_interface()
-
+       
         self.spin_nodes()
+     
 
     def destroy(self) -> None:
         """

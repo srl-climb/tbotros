@@ -11,10 +11,10 @@ from ament_index_python.packages import get_package_prefix, get_package_share_di
 # https://answers.ros.org/question/374926/ros2-how-to-launch-rviz2-with-config-file/
 # https://github.com/ros-planning/navigation2/blob/main/nav2_bringup/launch/multi_tb3_simulation_launch.py
 
-commands_path = '/home/climb/ros2_ws/command/command.pkl'
-enable_gui = True
+commands_path = '/home/climb/ros2_ws/commands/commands.pkl'
+enable_gui = False
 enable_optitrack = False
-enable_rviz = True
+enable_rviz = False
 
 logging.get_logger('launch').info(''' 
 
@@ -52,7 +52,7 @@ def generate_launch_description():
     executables = []
 
     planner_config_path = os.path.join(get_package_share_directory('tbotros_config'), 'config/planner.yaml')
-    tbot_desc_path = os.path.join(get_package_share_directory('tbotros_description'), 'desc/tetherbot_light.pkl')
+    tbot_desc_path = os.path.join(get_package_share_directory('tbotros_description'), 'desc/tetherbot.pkl')
 
     # path planner
     executables.append(Node(
@@ -76,8 +76,7 @@ def generate_launch_description():
         executables.append(Node(
             package = 'tetherbot_gui',
             executable = 'tetherbot_gui',
-            on_exit = Shutdown(),
-            parameters = [{'config_path': tbot_desc_path}]
+            on_exit = Shutdown()
         ))
 
     # optitrack

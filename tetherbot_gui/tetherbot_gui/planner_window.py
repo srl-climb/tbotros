@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     
 class PlannerWindow(Window):
 
-    def __init__(self, parent: App, title: str = 'Planner/Squencer Window'):
+    def __init__(self, parent: App, title: str = 'Planner Window'):
 
         super().__init__(parent, title)
 

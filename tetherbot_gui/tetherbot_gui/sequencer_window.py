@@ -2,7 +2,7 @@ from __future__ import annotations
 from std_msgs.msg import Bool, String
 from std_srvs.srv import Trigger
 from custom_srvs.srv import SetString
-from custom_actions.action import Empty as ExecuteSequence
+from custom_actions.action import ExecuteSequence
 from .window import Window
 from typing import TYPE_CHECKING
 
@@ -109,7 +109,7 @@ class SequencerWindow(Window):
         self._load_commands_node.req_queue.put(Trigger.Request())
 
     def execute_commands_button_callback(self):
-
+        
         self._execute_sequence_node.goal_queue.put(ExecuteSequence.Goal())
 
     def execute_commands_cancel_button_callback(self):
