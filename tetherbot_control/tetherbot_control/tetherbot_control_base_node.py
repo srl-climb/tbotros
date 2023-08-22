@@ -19,7 +19,7 @@ class BaseNode(Node):
 
         super().__init__(**kwargs)
 
-        self.declare_parameter('config_file', '/home/srl-orin/ros2_ws/src/tbotros_description/desc/tetherbot/tetherbot_light.pkl')
+        self.declare_parameter('config_file', '/home/srl-orin/ros2_ws/src/tbotros_description/tbotros_description/desc/tetherbot/tetherbot_light.pkl')
         self._config_file = self.get_parameter('config_file').get_parameter_value().string_value
       
         # tf buffer

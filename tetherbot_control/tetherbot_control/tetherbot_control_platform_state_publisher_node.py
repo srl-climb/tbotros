@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import rclpy
+import rclpy.time
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from std_srvs.srv import Trigger
@@ -11,7 +12,6 @@ from custom_msgs.msg import Float64Array, MotorPosition
 from custom_srvs.srv import SetString
 from .tetherbot_control_base_state_publisher_node import BaseStatePublisherNode
 from tbotlib import TbTetherbot, TransformMatrix
-
 
 class PlatformStatePublisherNode(BaseStatePublisherNode):
 
@@ -29,11 +29,18 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         self._optitrack_pose = PoseStamped()
         self.set_transform_source(self.get_parameter('default_transform_source').get_parameter_value().string_value)
 
+        # by default the gripper parent is the hold, but we set it to the world/map
+        # this way T_local gets referenced to the world/map and not to the hold frame
+        for gripper in self._tbot.grippers:
+            gripper.parent = self._tbot
+
         # subscriptions
         self.create_subscription(PoseStamped, '/zedm/zed_node/pose', self.zed_pose_sub_callback, 1)
         self.create_subscription(PoseStamped, '/tetherbot_optitrack/pose', self.optitrack_pose_sub_callback, 1)
         for i in range(self._tbot.m):
             self.create_subscription(MotorPosition, 'motor' + str(i) + '/position', lambda msg, i=i: self.motor_position_sub_callback(msg, i), 1)
+        for i in range(self._tbot.k):
+            self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg, i=i: self.gripper_pose_sub_callback(msg, i), 1)
         # publishers
         self._pose_pub = self.create_publisher(PoseStamped, self.get_name() + '/pose', 1)
         self._transform_source_pub = self.create_publisher(String, self.get_name() + '/transform_source', 1)
@@ -95,6 +102,10 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         msg.data = self._transform_source
         self._transform_source_pub.publish(msg)
 
+    def gripper_pose_sub_callback(self, msg: PoseStamped, i: int):
+
+        self._tbot.grippers[i].T_local = TransformMatrix(self.pose2mat(msg.pose))
+
     def motor_position_sub_callback(self, msg: MotorPosition, i: int):
 
         self._joint_states[i] = msg.actual_position
@@ -126,7 +137,7 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
                 start_time = self.get_clock().now().seconds_nanoseconds()[0]
                 state = 1
 
-            # wait for service, send request
+            # wait for action services, send request
             elif state == 1:
                 if self._set_pose_cli.service_is_ready():
                     start_time = self.get_clock().now().seconds_nanoseconds()[0]
@@ -187,4 +198,5 @@ def main(args = None):
         rclpy.shutdown()
 
 if __name__ == '__main__':
+
     main()

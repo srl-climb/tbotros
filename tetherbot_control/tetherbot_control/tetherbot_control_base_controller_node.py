@@ -1,21 +1,19 @@
 from __future__ import annotations
 
-import uuid
-import rclpy.task
 import rclpy.executors
 import numpy as np
 
 from rclpy.node import Publisher
-from rclpy.action import ActionServer, ActionClient, CancelResponse, GoalResponse
+from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from threading import Lock
 from custom_msgs.msg import MotorPosition
-from custom_actions.action import MoveMotor, MoveTetherbot
+from custom_actions.action import MoveTetherbot
 from std_srvs.srv import Empty
-from std_msgs.msg import Bool
-from geometry_msgs.msg import Pose
-from tbotlib import TbTetherbot, TransformMatrix, TetherbotVisualizer
+from std_msgs.msg import Bool, Int8
+from geometry_msgs.msg import Pose, PoseStamped
+from tbotlib import TbTetherbot
 from .tetherbot_control_base_node import BaseNode
 
 
@@ -38,29 +36,37 @@ class BaseControllerNode(BaseNode):
                      goal_callback = self.goal_move_callback,
                      cancel_callback = self.cancel_move_callback,
                      callback_group = ReentrantCallbackGroup())
-        
-        # action clients
-        self._motor_action_clis: list[ActionClient] = []
-        for name in default_motor_node_names:
-            self._motor_action_clis.append(ActionClient(self, MoveMotor, name + '/move', callback_group = ReentrantCallbackGroup()))
-        
+             
         # services
         self.create_service(Empty, self.get_name() + '/enable_control', self.enable_control_callback)
         self.create_service(Empty, self.get_name() + '/disable_control', self.disable_control_callback)
 
         # publishers
-        self._target_pose_pub = self.create_publisher(Pose, self.get_name() + '/target_pose', 1)
+        self._target_pose_pub = self.create_publisher(PoseStamped, self.get_name() + '/target_pose', 1)
         self._control_enabled_pub = self.create_publisher(Bool, self.get_name() + '/control_enabled', 1)
         self._target_position_pubs: list[Publisher] = []
         for name in default_motor_node_names:
             self._target_position_pubs.append(self.create_publisher(MotorPosition, name + '/target_position', 100))
 
+        # subscriptions
+        self._motor_modes: list[int] = []
+        self._motor_runnings: list[bool] = []
+        for i in range(len(default_motor_node_names)):
+            self._motor_modes.append(0)
+            self._motor_runnings.append(False)
+            self.create_subscription(Bool, default_motor_node_names[i] + '/running', lambda msg, i=i: self.motor_running_callback(msg, i), 1)
+            self.create_subscription(Int8, default_motor_node_names[i] + '/mode', lambda msg, i=i: self.motor_mode_callaack(msg, i), 1)
+        self.create_subscription(PoseStamped, self.get_name() + '/actual_pose', self.actual_pose_callback, 1)
+
         # publisher timer
-        self.create_timer(0.2, self.timer_callback)
+        self.create_timer(0.2, self.publish_loop)
 
         # control loop timer
         self._control_loop_rate = 0.02 # in seconds
         self.create_timer(self._control_loop_rate, self.control_loop, callback_group = MutuallyExclusiveCallbackGroup())
+
+        # watchdog loop
+        self.create_timer(0.2, self.watchdog_loop)
 
         # rate for waiting and monitoring in the action server executor
         self._rate = self.create_rate(10, self.get_clock())
@@ -74,16 +80,18 @@ class BaseControllerNode(BaseNode):
         self._current_move_id = int(-1)
 
         # parameters of the control loop
-        self._target_pose  = None
+        self._target_pose: Pose = None
+        self._actual_pose: Pose = None
         self._target_pose_queue = []
         self._control_enabled = False
 
-    def timer_callback(self):
+    def publish_loop(self):
 
         if self._target_pose is None:
-            msg = Pose()
+            msg = PoseStamped()
         else:
-            msg = self._target_pose
+            msg = PoseStamped()
+            msg.pose = self._target_pose
         self._target_pose_pub.publish(msg)
 
         msg = Bool()
@@ -92,37 +100,60 @@ class BaseControllerNode(BaseNode):
 
     def control_loop(self):
 
-        if self._control_enabled:
+        if self._control_enabled and self._target_pose is not None:
+            
             # get the next target pose if available
             if self._target_pose_queue:
                 self._target_pose = self._target_pose_queue.pop(0)
 
-            if self._target_pose is not None:
-                
-                # calculate target position of the motors
-                target_positions = self.control_function(self._target_pose)
+            # calculate target position of the motors
+            target_positions = self.control_function(self._target_pose)
 
-                # publish target positions to the motors
-                for target_position_pub, q in zip(self._target_position_pubs, target_positions):
-                    msg = MotorPosition()
-                    msg.target_position = q
-                    target_position_pub.publish(msg)
+            # publish target positions to the motors
+            for target_position_pub, q in zip(self._target_position_pubs, target_positions):
+                msg = MotorPosition()
+                msg.target_position = q
+                target_position_pub.publish(msg)
+
+    def watchdog_loop(self):
+
+        if self._control_enabled:
+            if all(mode == 8 for mode in self._motor_modes) and all(self._motor_runnings):
+                pass
+            else:
+                self.get_logger().warn('One or more motors stopped running/are in wrong mode, disabling control')
+                self._control_enabled = False
 
     def control_function(self, target_pose: Pose) -> np.ndarray:
 
         pass
 
-    def enable_control_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
+    def actual_pose_callback(self, msg: PoseStamped):
 
+        self._actual_pose = msg.pose
+
+    def enable_control_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
+        
+        self.get_logger().info('Enabling control')
+        self._target_pose = self._actual_pose
         self._control_enabled = True
 
         return response
     
     def disable_control_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
 
+        self.get_logger().info('Disabling control')
         self._control_enabled = False
 
         return response
+    
+    def motor_running_callback(self, msg: Bool, i: int):
+
+        self._motor_runnings[i] = msg.data
+
+    def motor_mode_callaack(self, msg: Int8, i: int):
+
+        self._motor_modes[i] = msg.data
 
     def execute_move_callback(self, goal_handle: ServerGoalHandle):
         
@@ -133,67 +164,26 @@ class BaseControllerNode(BaseNode):
        
             # execute state machine
             state = 0
-            start_time = 0
             
             while True:
                 self._rate.sleep()
 
-                # initialize state machine variables
                 if state == 0:
-                    self._target_pose_queue = []
-                    send_goal_futures: list[rclpy.Future] = []
+                    self._target_pose_queue = self.array2poses(goal_handle.request.poses)
                     state = 1
 
-                # send goals to motor action servers 
-                elif state == 1:
-                    for motor_action_cli in self._motor_action_clis:
-                        goal = MoveMotor.Goal()
-                        goal.mode = 2           
-                        goal.profile_acceleration = float(3)
-                        goal.profile_deceleration = float(3)
-                        goal.profile_velocity = float(3)
-                        send_goal_futures.append(motor_action_cli.send_goal_async(goal))
-                    state = 2
-
-                # wait for servers to become available
-                elif state == 2:
-                    if all([future.done() for future in send_goal_futures]):
-                        state = 3
-                    else:
-                        state = 2
-
-                # get current time
-                elif state == 3:
-                    start_time = self.get_clock().now().seconds_nanoseconds()[0]
-                    state = 4
-
-                # wait for 1 s
-                elif state == 4:
-                    if self.get_clock().now().seconds_nanoseconds()[0] - start_time >= 1:
-                        state = 5
-                    else:
-                        state = 4
-
-                # send positions
-                elif state == 5:
-                    self._target_pose_queue = self.array2poses(goal_handle.request.poses)
-                    state = 6
-
                 # wait for controller to empty target pose queue
-                elif state == 6:
+                elif state == 1:
                     if not self._target_pose_queue:
+                        self.get_logger().info('Move [%s]: Succeeded' %move_id)
                         goal_handle.succeed()
                         state = 99
                     else:
-                        state = 6
+                        state = 1
 
                 # shutdown/clean up
                 elif state == 99:
                     self._target_pose_queue = []
-                    for future in send_goal_futures:
-                        if future.done():
-                            future.result().cancel_goal_async()
-                        future.cancel()
                     # leave the state machine
                     break
 
@@ -201,23 +191,20 @@ class BaseControllerNode(BaseNode):
                 # is new move waiting for execution?
                 if move_id != self._current_move_id:
                     goal_handle.abort()
-                    self.get_logger().info('Move [%s]: Aborted' %move_id)
+                    self.get_logger().info('Move [%s]: Aborted, overwritten by new move' %move_id)
                     state = 99
                 # is cancel requested?
                 elif goal_handle.is_cancel_requested:
                     goal_handle.canceled()
                     self.get_logger().info('Move [%s]: Canceled' %move_id)
                     state = 99
-                # is motor action terminated unexpectedly?
-                else:
-                    for future in send_goal_futures:
-                        if future.done():
-                            if future.result().status > 3:
-                                goal_handle.abort()
-                                self.get_logger().error('Move [%s]: Aborted, motor action unexpectedly canceled/aborted' %move_id)
-                                state = 99
-                
-            return MoveTetherbot.Result()
+                # is control enabled?
+                elif not self._control_enabled:
+                    goal_handle.abort()
+                    self.get_logger().info('Move [%s]: Aborted, control disabled' %move_id)
+                    state = 99
+                  
+        return MoveTetherbot.Result()
         
     def cancel_move_callback(self, _):
 
