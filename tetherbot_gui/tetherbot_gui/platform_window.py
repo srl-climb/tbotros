@@ -4,6 +4,7 @@ from std_msgs.msg import Bool, String
 from std_srvs.srv import Trigger, Empty as EmptyService
 from custom_msgs.msg import Float64Array, BoolArray
 from custom_srvs.srv import SetString, Tension
+from custom_actions.action import Empty as EmptyAction
 from geometry_msgs.msg import Pose, PoseStamped
 from .window import Window
 from typing import TYPE_CHECKING
@@ -24,7 +25,7 @@ class PlatformWindow(Window):
 
         self._actual_pose_node = self.create_subscriber_node(msg_type = PoseStamped, 
                                                              msg_name = self.parent.tbot.platform.name + '/platform_state_publisher/pose')
-        self._target_pose_node = self.create_subscriber_node(msg_type = Pose, 
+        self._target_pose_node = self.create_subscriber_node(msg_type = PoseStamped, 
                                                              msg_name = self.parent.tbot.platform.name + '/platform_controller/target_pose')
         self._joint_states_node = self.create_subscriber_node(msg_type = Float64Array, 
                                                               msg_name = self.parent.tbot.platform.name + '/platform_state_publisher/joint_states')
@@ -44,6 +45,8 @@ class PlatformWindow(Window):
                                                                 srv_name = self.parent.tbot.platform.name + '/platform_state_publisher/calibrate_zed_pose')
         self._tension_tethers_node = self.create_client_node(srv_type = Tension,
                                                                     srv_name = self.parent.tbot.platform.name + '/platform_controller/tension_gripper_tethers')
+        self._calibrate_tether_lengths_node = self.create_action_client_node(action_type = EmptyAction,
+                                                                             action_name = self.parent.tbot.platform.name + '/platform_controller/calibrate_tether_lengths')
         
         state_frame = self.create_label_frame(master = self, text = 'State')
         state_frame.grid(row = 0, column = 0)
@@ -106,6 +109,18 @@ class PlatformWindow(Window):
         self._success_label = self.create_bool_label(master = service_frame)
         self._success_label.grid(row = 8, column = 1)
 
+        action_frame = self.create_label_frame(master = self, text = 'Actions')
+        action_frame.grid(row = 2, column = 0)
+
+        button = self.create_button(master = action_frame, text = 'Calibrate Tether Lengths', command = self.calibrate_tether_lengths_button_callback)
+        button.grid(row = 0, column = 0, columnspan = 2)
+        button = self.create_cancel_button(master = action_frame, command = self.cancel_button_callback)
+        button.grid(row = 1, column = 0, columnspan = 2)
+        label = self.create_label(master = action_frame, text = 'Status:')
+        label.grid(row = 2, column = 0)
+        self._status_label = self.create_action_status_label(master = action_frame)
+        self._status_label.grid(row = 2, column = 1)
+
         self.create_timer(callback = self.timer_callback, timeout_ms = 100)
 
     def timer_callback(self):
@@ -114,8 +129,8 @@ class PlatformWindow(Window):
             msg: PoseStamped = self._actual_pose_node.msg_queue.get()
             self._actual_pose_label_frame.update_data(msg.pose)
         if not self._target_pose_node.msg_queue.empty():
-            msg: Pose = self._target_pose_node.msg_queue.get()
-            self._target_pose_label_frame.update_data(msg)
+            msg: PoseStamped = self._target_pose_node.msg_queue.get()
+            self._target_pose_label_frame.update_data(msg.pose)
         if not self._joint_states_node.msg_queue.empty():
             msg: Float64Array = self._joint_states_node.msg_queue.get()
             self._joint_states_label.update_data(msg.data)
@@ -134,6 +149,8 @@ class PlatformWindow(Window):
         if not self._calibrate_zed_pose_node.res_queue.empty():
             res: Trigger.Response = self._calibrate_zed_pose_node.res_queue.get()
             self._success_label.update_data(res.success)
+        if not self._calibrate_tether_lengths_node.status_queue.empty():
+            self._status_label.update_data(self._calibrate_tether_lengths_node.status_queue.get())
         
     def enable_control_button_callback(self):
 
@@ -173,4 +190,12 @@ class PlatformWindow(Window):
         self._success_label.update_data('None')
 
         self._calibrate_zed_pose_node.req_queue.put(Trigger.Request())
+
+    def calibrate_tether_lengths_button_callback(self):
+
+        self._calibrate_tether_lengths_node.goal_queue.put(EmptyAction.Goal())
+
+    def cancel_button_callback(self):
+
+        self._calibrate_tether_lengths_node.cancel_event.set()
 

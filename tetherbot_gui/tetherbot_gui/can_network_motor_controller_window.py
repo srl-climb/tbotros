@@ -43,8 +43,8 @@ class CanNetworkMotorControllerWindow(Window):
         self.current_labels: List[TkFloatLabel] = []
         self.inputs_nodes: list[SubscriptionNode] = []
         self.inputs_labels: List[Dict[str, TkBoolLabel]] = []
-        self.can_error_nodes: list[SubscriptionNode] = []
-        self.can_error_labels: List[Dict[str, TkStringLabel, TkErrorCodeLabel, TkFloatLabel]] =[]
+        """ self.can_error_nodes: list[SubscriptionNode] = []
+        self.can_error_labels: List[Dict[str, TkStringLabel, TkErrorCodeLabel, TkFloatLabel]] =[] """
 
         self.mode_menues: List[TkOptionMenu] = []
         self.target_position_entries: List[TkFloatEntry] = []
@@ -70,7 +70,7 @@ class CanNetworkMotorControllerWindow(Window):
             self.statusword_labels.append({})
             self.position_labels.append({})
             self.inputs_labels.append({})
-            self.can_error_labels.append({})
+            """ self.can_error_labels.append({}) """
 
             # Create a subscriber node for receiving status word messages
             self.statusword_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/statusword',
@@ -85,8 +85,8 @@ class CanNetworkMotorControllerWindow(Window):
                                                                   msg_type=Int16))
             self.inputs_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/inputs',
                                                                   msg_type=DigitalInputs))
-            self.can_error_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/can_error',
-                                                                    msg_type=CanError, timeout_sec = -1))
+            """ self.can_error_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/can_error',
+                                                                    msg_type=CanError, timeout_sec = -1)) """
             self.shut_down_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/shut_down',
                                                                 srv_type=Trigger))
             self.switch_on_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/switch_on',
@@ -223,7 +223,7 @@ class CanNetworkMotorControllerWindow(Window):
             self.inputs_labels[i]['homing_switch'] = self.create_bool_label(master=labelframe)
             self.inputs_labels[i]['homing_switch'].grid(row=2, column=1)
 
-            labelframe = self.create_label_frame(master=state_frame, text='CAN Error')
+            """ labelframe = self.create_label_frame(master=state_frame, text='CAN Error')
             labelframe.grid(row = 7, column = 0, columnspan=2)
 
             label = self.create_label(master=labelframe, text="Description:")
@@ -239,7 +239,7 @@ class CanNetworkMotorControllerWindow(Window):
             label = self.create_label(master=labelframe, text="Timestamp:")
             label.grid(row=2, column=0)
             self.can_error_labels[i]['timestamp'] = self.create_float_label(master=labelframe)
-            self.can_error_labels[i]['timestamp'].grid(row=2, column=1)
+            self.can_error_labels[i]['timestamp'].grid(row=2, column=1) """
 
             service_frame = self.create_label_frame(master = motor_labelframe, text = 'Services')
             service_frame.grid(row = 1 , column = 0, columnspan=2)
@@ -294,7 +294,7 @@ class CanNetworkMotorControllerWindow(Window):
 
             label = self.create_label(master=action_frame, text="Mode:")
             label.grid(row=0, column=0)
-            menu = self.create_option_menu(master = action_frame, values= ['Home', 'Position (abs.)', 'Position (rel.)', 'Home*'])
+            menu = self.create_option_menu(master = action_frame, values= ['Home', 'Position (abs.)', 'Position (rel.)', 'Home*', 'CSP'])
             menu.grid(row = 0, column = 1)
             self.mode_menues.append(menu)
 
@@ -390,8 +390,10 @@ class CanNetworkMotorControllerWindow(Window):
 
         button = self.create_button(master = action_frame, text = 'Home*', command = self.home_star_button_callbacks, width = 13)
         button.grid(row=0,column=0)
-        button = self.create_cancel_button(master=action_frame, text='STOP', command = self.stop_move_button_callbacks, width = 13)
-        button.grid(row=0, column = 1)
+        button = self.create_button(master = action_frame, text = 'CSP', command = self.csp_button_callbacks, width = 13)
+        button.grid(row=0,column=1)
+        button = self.create_button(master=action_frame, text='Stop', command = self.stop_move_button_callbacks, width = 13)
+        button.grid(row=1, column = 0)
 
         self.create_timer(callback=self.timer_callback, timeout_ms=100)
 
@@ -437,11 +439,11 @@ class CanNetworkMotorControllerWindow(Window):
                 self.inputs_labels[i]['positive_limit_switch'].update_data(msg.positive_limit_switch)
                 self.inputs_labels[i]['homing_switch'].update_data(msg.homing_switch)
 
-            if not self.can_error_nodes[i].msg_queue.empty():
+            """ if not self.can_error_nodes[i].msg_queue.empty():
                 msg: CanError = self.can_error_nodes[i].msg_queue.get()
                 self.can_error_labels[i]['description'].update_data(msg.description)
                 self.can_error_labels[i]['code'].update_data(msg.code)
-                self.can_error_labels[i]['timestamp'].update_data(msg.timestamp)
+                self.can_error_labels[i]['timestamp'].update_data(msg.timestamp) """
 
             if not self.shut_down_nodes[i].res_queue.empty():
                 response: Trigger.Response = self.shut_down_nodes[i].res_queue.get()
@@ -529,6 +531,8 @@ class CanNetworkMotorControllerWindow(Window):
             goal.target_position = target_position_entry.get_data()
         elif mode == 'Home*':
             goal.mode = int(3)
+        elif mode == 'CSP':
+            goal.mode = int(2)
 
         node.goal_queue.put(goal)
 
@@ -536,6 +540,11 @@ class CanNetworkMotorControllerWindow(Window):
 
         for node in self.move_action_nodes:
             self.start_move_button_callback(node, None, None, None,None, None, 'Home*')
+
+    def csp_button_callbacks(self):
+
+        for node in self.move_action_nodes:
+            self.start_move_button_callback(node, None, None, None,None, None, 'CSP')
 
     def stop_move_button_callbacks(self):
 

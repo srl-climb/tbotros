@@ -207,13 +207,13 @@ class ActionClientNode(Node):
                 self._state = 99
         
         # status queue
-        if self._goal_handle is not None and self._enable_status:
-            self.status_queue.put(self._goal_handle.status, timeout = 2)
+        if self._goal_handle is not None and self._enable_status and self.status_queue.empty():
+            self.status_queue.put(self._goal_handle.status)
 
     def feedback_callback(self, msg):
 
-        if self._enable_feedback:
-            self.feedback_queue.put(msg.feedback, timeout = 2)
+        if self._enable_feedback and self.feedback_queue.empty():
+            self.feedback_queue.put(msg.feedback)
 
 
 
