@@ -11,6 +11,7 @@ from custom_srvs.srv import Tension
 from custom_msgs.msg import BoolArray
 from custom_actions.action import MoveMotor, Empty as EmptyAction
 from std_srvs.srv import Trigger
+from std_msgs.msg import Float64
 from geometry_msgs.msg import PoseStamped, Pose, Vector3
 from tbotlib import TransformMatrix, TetherbotVisualizer
 from math import sqrt
@@ -41,8 +42,9 @@ class PlatformControllerNode(BaseControllerNode):
         # service for tensioning a grippers' tethers
         self.create_service(Tension, self.get_name() + '/tension_gripper_tethers', self.tension_gripper_tethers_srv_callback)
 
-        # publisher for tethers tension
+        # publisher for tethers tension/stability
         self._tether_tension_pub = self.create_publisher(BoolArray, self.get_name() + '/tether_tension', 1)
+        self._stability_pub = self.create_publisher(Float64, self.get_name() + '/stability', 1)
         self.create_timer(0.5, self.pub_timer)
 
         # subscription to gripper poses
@@ -100,6 +102,14 @@ class PlatformControllerNode(BaseControllerNode):
         msg.data = self._tbot.tensioned.astype(bool).tolist()
 
         self._tether_tension_pub.publish(msg)
+
+        msg = Float64()
+        try:
+            msg.data = float(self._tbot.stability()[0])
+        except:
+            msg.data = float(-1)
+
+        self._stability_pub.publish(msg)
 
     def calibrate_tether_lengths_execute_callback(self, goal_handle: ServerGoalHandle) -> Trigger.Response:
 
