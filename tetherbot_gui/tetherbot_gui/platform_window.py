@@ -1,11 +1,11 @@
 from __future__ import annotations
 import tkinter as tk
-from std_msgs.msg import Bool, String
+from std_msgs.msg import Bool, String, Float64
 from std_srvs.srv import Trigger, Empty as EmptyService
 from custom_msgs.msg import Float64Array, BoolArray
 from custom_srvs.srv import SetString, Tension
 from custom_actions.action import Empty as EmptyAction
-from geometry_msgs.msg import Pose, PoseStamped
+from geometry_msgs.msg import PoseStamped
 from .window import Window
 from typing import TYPE_CHECKING
 
@@ -35,6 +35,8 @@ class PlatformWindow(Window):
                                                                   msg_name = self.parent.tbot.platform.name + '/platform_state_publisher/transform_source')
         self._tether_tension_node = self.create_subscriber_node(msg_type = BoolArray,
                                                                 msg_name = self.parent.tbot.platform.name + '/platform_controller/tether_tension')
+        self._stability_node = self.create_subscriber_node(msg_type = Float64,
+                                                           msg_name = self.parent.tbot.platform.name + '/platform_state_publisher/stability')
         self._enable_control_node = self.create_client_node(srv_type = EmptyService, enable_response = False,
                                                             srv_name = self.parent.tbot.platform.name + '/platform_controller/enable_control')
         self._disable_control_node = self.create_client_node(srv_type = EmptyService, enable_response = False, 
@@ -75,6 +77,11 @@ class PlatformWindow(Window):
         label.grid(row = 5, column = 0)
         self._tether_tension_label = self.create_vector_label(master = state_frame, length = self.parent.tbot.platform.m, digits = 0)
         self._tether_tension_label.grid(row = 5, column = 1)
+
+        label = self.create_label(master = state_frame, text = 'Stability:')
+        label.grid(row = 6, column = 0)
+        self._stability_label = self.create_float_label(master = state_frame, digits = 3)
+        self._stability_label.grid(row = 6, column = 1)
 
         service_frame = self.create_label_frame(master = self, text = 'Services')
         service_frame.grid(row = 1, column = 0)
@@ -143,6 +150,9 @@ class PlatformWindow(Window):
         if not self._tether_tension_node.msg_queue.empty():
             msg: BoolArray = self._tether_tension_node.msg_queue.get()
             self._tether_tension_label.update_data(msg.data)
+        if not self._stability_node.msg_queue.empty():
+            msg: Float64 = self._stability_node.msg_queue.get()
+            self._stability_label.update_data(msg.data)
         if not self._tension_tethers_node.res_queue.empty():
             res: Tension.Response = self._tension_tethers_node.res_queue.get()
             self._success_label.update_data(res.success)
