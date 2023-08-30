@@ -9,6 +9,7 @@ from .tkinter_objects import TkBoolLabel, TkStringLabel, TkFloatLabel, TkErrorCo
     TkActionStatusLabel, TkFloatEntry, TkOptionMenu
 from .window import Window
 from typing import TYPE_CHECKING, Dict, List
+import time
 
 if TYPE_CHECKING:
     from .tetherbot_gui import App
@@ -24,8 +25,110 @@ class CanNetworkMotorControllerWindow(Window):
         self._motor_namespaces = ['motor' + str(i) for i in range(13)]
 
         super().__init__(parent, title)
+        self.after(4000, self.afterStartup)
+        
+
+    def afterStartup(self):
+        print("Initializing nodes...")
+
+        # Initialize Subscribers, Service Clients and Action Clients
+
+        for i in range(len(self._motor_namespaces)):
+            print("-------------------- Iteration " + str(i) + " -----------------------------------")
+
+            print("Create subscriber nodes...")
+            start_time = time.time()
+
+            # Create a subscriber node for receiving status word messages
+            self.statusword_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/statusword',
+                                                                     msg_type=Statusword))  
+            self.state_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/state',
+                                                         msg_type=String))  
+            self.position_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/position',
+                                                                   msg_type=MotorPosition))
+            self.velocity_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/velocity',
+                                                                   msg_type=Float64))
+            self.current_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/current',
+                                                                  msg_type=Int16))
+            self.inputs_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/inputs',
+                                                                  msg_type=DigitalInputs))
+            """ self.can_error_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/can_error',
+                                                                    msg_type=CanError, timeout_sec = -1)) """
+            
+            end_time = time.time()
+            print("----- Elapsed time: " + str(end_time - start_time) + " -----------------")
+
+            print("Create client nodes...")
+            start_time = time.time()
+
+            self.shut_down_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/shut_down',
+                                                                srv_type=Trigger))
+            self.switch_on_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/switch_on',
+                                                                srv_type=Trigger))
+            self.disable_voltage_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/disable_voltage',
+                                                                      srv_type=Trigger))
+            self.disable_operation_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/disable_operation',
+                                                                        srv_type=Trigger))
+            self.enable_operation_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/enable_operation',
+                                                                       srv_type=Trigger))
+            self.quick_stop_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/quick_stop',
+                                                                 srv_type=Trigger))
+            self.fault_reset_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/fault_reset',
+                                                                  srv_type=Trigger))
+            self.save_home_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/save_home',
+                                                                srv_type=Trigger))
+            end_time = time.time()
+            print("----- Elapsed time: " + str(end_time - start_time) + " -----------------")
+
+            self.move_action_nodes.append(self.create_action_client_node(action_name=self._motor_namespaces[i] + '/faulhaber_motor/move',
+                                                                         action_type=MoveMotor))
+            
+            # Adding command to the buttons via reference
+            self.shutdown_btns[i].config(command = lambda node = self.shut_down_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label))
+            self.switchon_btns[i].config(command = lambda node = self.switch_on_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label))
+            self.disvolt_btns[i].config(command = lambda node = self.disable_voltage_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label))
+            self.quickstop_btns[i].config(command = lambda node = self.quick_stop_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label))
+            self.disop_btns[i].config(command = lambda node = self.disable_operation_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label))
+            self.enop_btns[i].config(command = lambda node = self.enable_operation_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label))
+            self.savehome_btns[i].config(command = lambda node = self.save_home_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label))
+            self.faultres_btns[i].config(command = lambda node = self.fault_reset_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label))
+            self.start_btns[i].config(command = lambda node = self.move_action_nodes[-1], \
+                mode_menu = self.mode_menues[-1], \
+                target_position_entry = self.target_position_entries[-1], \
+                profile_velocity_entry = self.profile_velocity_entries[-1], \
+                profile_acceleration_entry = self.profile_acceleration_entries[-1], \
+                profile_deceleration_entry = self.profile_deceleration_entries[-1]: \
+                self.start_move_button_callback(node, 
+                                                mode_menu, 
+                                                target_position_entry, 
+                                                profile_velocity_entry, 
+                                                profile_acceleration_entry, 
+                                                profile_deceleration_entry))
+            self.stop_btns[i].config(command = lambda node = self.move_action_nodes[-1]: self.stop_move_button_callback(node))
+        
+        
+        
+        
+        self.create_timer(callback=self.timer_callback, timeout_ms=100)
+
+        print("Finished Initializing nodes!")
 
     def create_user_interface(self):
+
+        # Initialize buttons for later reference and command configuration after startup
+        self.shutdown_btns = [None] * len(self._motor_namespaces)
+        self.switchon_btns = [None] * len(self._motor_namespaces)
+        self.disvolt_btns = [None] * len(self._motor_namespaces)
+        self.quickstop_btns = [None] * len(self._motor_namespaces)
+        self.disop_btns = [None] * len(self._motor_namespaces)
+        self.enop_btns = [None] * len(self._motor_namespaces)
+        self.faultres_btns = [None] * len(self._motor_namespaces)
+        self.savehome_btns = [None] * len(self._motor_namespaces)
+        self.shutdown_btns = [None] * len(self._motor_namespaces)
+        self.start_btns = [None] * len(self._motor_namespaces)
+        self.stop_btns = [None] * len(self._motor_namespaces)
+
+
         # Create the user interface 
 
         frame = self.create_scroll_frame(master = self)
@@ -67,45 +170,12 @@ class CanNetworkMotorControllerWindow(Window):
 
         # Iterate through each motor namespace
         for i in range(len(self._motor_namespaces)):
+            
             self.statusword_labels.append({})
             self.position_labels.append({})
             self.inputs_labels.append({})
             """ self.can_error_labels.append({}) """
 
-            # Create a subscriber node for receiving status word messages
-            self.statusword_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/statusword',
-                                                                     msg_type=Statusword))  
-            self.state_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/state',
-                                                         msg_type=String))  
-            self.position_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/position',
-                                                                   msg_type=MotorPosition))
-            self.velocity_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/velocity',
-                                                                   msg_type=Float64))
-            self.current_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/current',
-                                                                  msg_type=Int16))
-            self.inputs_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/inputs',
-                                                                  msg_type=DigitalInputs))
-            """ self.can_error_nodes.append(self.create_subscriber_node(msg_name=self._motor_namespaces[i] + '/faulhaber_motor/can_error',
-                                                                    msg_type=CanError, timeout_sec = -1)) """
-            self.shut_down_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/shut_down',
-                                                                srv_type=Trigger))
-            self.switch_on_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/switch_on',
-                                                                srv_type=Trigger))
-            self.disable_voltage_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/disable_voltage',
-                                                                      srv_type=Trigger))
-            self.disable_operation_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/disable_operation',
-                                                                        srv_type=Trigger))
-            self.enable_operation_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/enable_operation',
-                                                                       srv_type=Trigger))
-            self.quick_stop_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/quick_stop',
-                                                                 srv_type=Trigger))
-            self.fault_reset_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/fault_reset',
-                                                                  srv_type=Trigger))
-            self.save_home_nodes.append(self.create_client_node(srv_name=self._motor_namespaces[i] + '/faulhaber_motor/save_home',
-                                                                srv_type=Trigger))
-            self.move_action_nodes.append(self.create_action_client_node(action_name=self._motor_namespaces[i] + '/faulhaber_motor/move',
-                                                                         action_type=MoveMotor))
-            
             motor_labelframe = self.create_label_frame(master=frame, text='Motor ' + str(i))
             motor_labelframe.grid(row=0, column= 1 + i)
 
@@ -256,38 +326,32 @@ class CanNetworkMotorControllerWindow(Window):
             label.grid(row=5, column=1)
             self.message_labels.append(label)
 
-            command = lambda node = self.shut_down_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Shut Down')
-            button.grid(row = 0, column = 0)
+            # Creating buttons without callback function
 
-            command = lambda node = self.switch_on_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Switch On')
-            button.grid(row = 0, column = 1)
+            self.shutdown_btns[i] = self.create_button(master = service_frame, width = 13, text = 'Shut Down')
+            self.shutdown_btns[i].grid(row = 0, column = 0)
 
-            command = lambda node = self.disable_voltage_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Disable Voltage')
-            button.grid(row = 1, column = 0)
+            self.switchon_btns[i] = self.create_button(master = service_frame, width = 13, text = 'Switch On')
+            self.switchon_btns[i].grid(row = 0, column = 1)
 
-            command = lambda node = self.quick_stop_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Quick Stop')
-            button.config(bg="#FFC0CB")
-            button.grid(row = 1, column = 1)
+            self.disvolt_btns[i] = self.create_button(master = service_frame, width = 13, text = 'Disable Voltage')
+            self.disvolt_btns[i].grid(row = 1, column = 0)
 
-            command = lambda node = self.disable_operation_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Disable Operation')
-            button.grid(row = 2, column = 0)
+            self.quickstop_btns[i] = self.create_button(master = service_frame, width = 13, text = 'Quick Stop')
+            self.quickstop_btns[i].config(bg="#FFC0CB")
+            self.quickstop_btns[i].grid(row = 1, column = 1)
 
-            command = lambda node = self.enable_operation_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Enable Operation')
-            button.grid(row = 2, column = 1)
+            self.disop_btns[i] = self.create_button(master = service_frame, width = 13, text = 'Disable Operation')
+            self.disop_btns[i].grid(row = 2, column = 0)
 
-            command = lambda node = self.save_home_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Save Home*')
-            button.grid(row = 3, column = 1)
+            self.enop_btns[i] = self.create_button(master = service_frame, width = 13, text = 'Enable Operation')
+            self.enop_btns[i].grid(row = 2, column = 1)
 
-            command = lambda node = self.fault_reset_nodes[-1], label = self.success_labels[-1]: self.trigger_service_button_callback(node, label)
-            button = self.create_button(master = service_frame, width = 13, command = command, text = 'Fault Reset')
-            button.grid(row = 3, column = 0)
+            self.savehome_btns[i] = self.create_button(master = service_frame, width = 13, text = 'Save Home*')
+            self.savehome_btns[i].grid(row = 3, column = 1)
+
+            self.faultres_btns[i] = self.create_button(master = service_frame, width = 13, text = 'Fault Reset')
+            self.faultres_btns[i].grid(row = 3, column = 0)
 
             action_frame = self.create_label_frame(master = motor_labelframe, text = 'Actions')
             action_frame.grid(row = 2, column = 0, columnspan=2)
@@ -322,23 +386,12 @@ class CanNetworkMotorControllerWindow(Window):
             entry.grid(row=4, column=1)
             self.profile_deceleration_entries.append(entry)
 
-            command = lambda node = self.move_action_nodes[-1], \
-                mode_menu = self.mode_menues[-1], \
-                target_position_entry = self.target_position_entries[-1], \
-                profile_velocity_entry = self.profile_velocity_entries[-1], \
-                profile_acceleration_entry = self.profile_acceleration_entries[-1], \
-                profile_deceleration_entry = self.profile_deceleration_entries[-1]: \
-                self.start_move_button_callback(node, 
-                                                mode_menu, 
-                                                target_position_entry, 
-                                                profile_velocity_entry, 
-                                                profile_acceleration_entry, 
-                                                profile_deceleration_entry)
-            button = self.create_button(master = action_frame, text='Start', width = 13, command = command)
-            button.grid(row=5, column=0)
-            command = lambda node = self.move_action_nodes[-1]: self.stop_move_button_callback(node)
-            button = self.create_cancel_button(master = action_frame, text='Stop', width = 13, command = command)
-            button.grid(row=5, column=1)
+            # Creating buttons without callback function
+            self.start_btns[i] = self.create_button(master = action_frame, text='Start', width = 13)
+            self.start_btns[i].grid(row=5, column=0)
+            
+            self.stop_btns[i] = self.create_cancel_button(master = action_frame, text='Stop', width = 13)
+            self.stop_btns[i].grid(row=5, column=1)
 
             label = self.create_label(master = action_frame, text = 'Status: ')
             label.grid(row=6, column=0)
@@ -395,7 +448,6 @@ class CanNetworkMotorControllerWindow(Window):
         button = self.create_button(master=action_frame, text='Stop', command = self.stop_move_button_callbacks, width = 13)
         button.grid(row=1, column = 0)
 
-        self.create_timer(callback=self.timer_callback, timeout_ms=100)
 
     def timer_callback(self):
         # Timer callback function that updates the status word labels
