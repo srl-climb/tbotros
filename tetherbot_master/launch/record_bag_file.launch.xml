@@ -1,6 +1,6 @@
 <launch>
   <executable cmd="ros2 bag record -o $(find-pkg-share tetherbot_optitrack)/bag_files/
-  /platform0/platform_controller/stability
+  /platform0/platform_state_publisher/stability
   /platform0/platform_state_publisher/pose
   /rpparm0/arm_state_publisher/pose 
   " output="screen" />

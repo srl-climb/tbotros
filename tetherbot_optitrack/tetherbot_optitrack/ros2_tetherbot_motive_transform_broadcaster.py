@@ -21,15 +21,20 @@ class ROS2TetherbotMotiveTransformBroadcasterNode(Node):
     
     def tbot_pose_callback(self, msg):
 
-        self.transform_msg.transform.translation.x = msg.rigidbodies[0].pose.position.x
-        self.transform_msg.transform.translation.y = msg.rigidbodies[0].pose.position.y
-        self.transform_msg.transform.translation.z = msg.rigidbodies[0].pose.position.z
-        self.transform_msg.transform.rotation.w = msg.rigidbodies[0].pose.orientation.x
-        self.transform_msg.transform.rotation.x = msg.rigidbodies[0].pose.orientation.y
-        self.transform_msg.transform.rotation.y = msg.rigidbodies[0].pose.orientation.z
-        self.transform_msg.transform.rotation.z = msg.rigidbodies[0].pose.orientation.w
+        try:
+            self.transform_msg.transform.translation.x = msg.rigidbodies[0].pose.position.x
+            self.transform_msg.transform.translation.y = msg.rigidbodies[0].pose.position.y
+            self.transform_msg.transform.translation.z = msg.rigidbodies[0].pose.position.z
+            self.transform_msg.transform.rotation.w = msg.rigidbodies[0].pose.orientation.x
+            self.transform_msg.transform.rotation.x = msg.rigidbodies[0].pose.orientation.y
+            self.transform_msg.transform.rotation.y = msg.rigidbodies[0].pose.orientation.z
+            self.transform_msg.transform.rotation.z = msg.rigidbodies[0].pose.orientation.w
 
-        TransformBroadcaster(self).sendTransform(self.transform_msg)
+            TransformBroadcaster(self).sendTransform(self.transform_msg)
+        
+        except:
+            self.get_logger().warning('No rigid body available!', throttle_duration_sec=2)
+
 
 
 def main():
