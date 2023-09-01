@@ -4,15 +4,12 @@ import rclpy
 import yaml
 import numpy as np
 import quaternion as qu
-import os
-import sys
 from typing import Tuple
 from time import sleep
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.action import ActionServer 
 from rclpy.action.server import ServerGoalHandle, GoalResponse, CancelResponse
-from ament_index_python.packages import get_package_prefix
 from multiprocessing import Process, Queue as ProcessQueue
 from threading import Lock, Event, Thread
 from custom_actions.action import PlanTetherbot
@@ -25,7 +22,7 @@ from tbotlib import TbTetherbot, BsplineSmoother, ProfileQPlatform, FastProfile,
     ProfileQArm, PlanPlatform2Configuration, PlanArm2Pose, PlanPickAndPlace2, \
     PlanPlatform2Hold, PlanPlatform2Gripper, PlanPlatform2Pose, FastPlanPickAndPlace, \
     FastPlanPlatform2Configuration, GlobalPlanner, TbPlatformAlignGraph, TbPlatformPoseGraph, \
-    TbArmPoseGraph, TbGlobalGraph, TbWorkspace, CommandList, TransformMatrix, TetherbotVisualizer
+    TbArmPoseGraph, TbGlobalGraph, TbWorkspace, CommandList, TransformMatrix, TetherbotVisualizer, yaml2planner
 
  
 class PlannerNode(Node):
@@ -34,10 +31,10 @@ class PlannerNode(Node):
 
         super().__init__(node_name = 'planner')
 
-        self.declare_parameter('config_file', '/home/srl-orin/ros2_ws/config/tetherbot_light.pkl')
+        self.declare_parameter('config_file', '/home/climb/ros2_ws/src/tbotros_description/tbotros_description/desc/tetherbot/tetherbot_light.pkl')
         self._config_file = self.get_parameter('config_file').get_parameter_value().string_value
 
-        self.declare_parameter('planner_config_path', '/home/srl-orin/ros2_ws/config/planner.yaml')
+        self.declare_parameter('planner_config_path', '/home/climb/ros2_ws/src/tbotros_config/tbotros_config/config/planner.yaml')
         self._planner_config_path = self.get_parameter('planner_config_path').get_parameter_value().string_value
 
         self.declare_parameter('commands_path', '/home/srl-orin/ros2_ws/command/command.pkl')
@@ -49,10 +46,10 @@ class PlannerNode(Node):
         self._tbot_platform_arm_qs = self._tbot.platform.arm.qs
         self._tbot_platform_T_local = self._tbot.platform.T_local
         self._tbot_grippers_T_world: list[TransformMatrix] = []
-        self._tbot_grippers_hold_index: list[int] = []
+        self._tbot_grippers_hold_name: list[str] = []
         for gripper in self._tbot.grippers:
             self._tbot_grippers_T_world.append(gripper.T_world)
-            self._tbot_grippers_hold_index.append(0)
+            self._tbot_grippers_hold_name.append('')
 
         self.load_planner_config()
 
@@ -66,7 +63,7 @@ class PlannerNode(Node):
         self.create_subscription(Float64Array, self._tbot.platform.arm.name + '/arm_state_publisher/joint_states', self.arm_joint_states_sub_callback, 1)
         for i in range(self._tbot.k):
             self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg, i=i: self.gripper_pose_sub_callback(msg, i), 1)
-            self.create_subscription(Int64, self._tbot.grippers[i].name + '/gripper_state_publisher/hold_index', lambda msg, i=i: self.gripper_hold_index_sub_callback(msg, i), 1)
+            self.create_subscription(String, self._tbot.grippers[i].name + '/gripper_state_publisher/hold_name', lambda msg, i=i: self.gripper_hold_name_sub_callback(msg, i), 1)
         # services
         self.create_service(Empty, self.get_name() + '/display_state', self.display_state_srv_callback)
         self.create_service(Empty, self.get_name() + '/display_commands', self.display_commands_srv_callback)
@@ -107,17 +104,14 @@ class PlannerNode(Node):
     def update_tbot(self):
 
         self._tbot.platform.arm.qs = self._tbot_platform_arm_qs
-        self.get_logger().info(str(self._tbot_platform_arm_qs))
-        self.get_logger().info(str(self._tbot.platform.arm.qs))
         self._tbot.platform.T_local = self._tbot_platform_T_local
 
         for i in range(self._tbot.k):
             self._tbot.grippers[i].T_world = self._tbot.grippers[i].T_world
 
-            if self._tbot_grippers_hold_index[i] < 0:
-                self._tbot.pick(i, correct_pose = False)
-            else:
-                self._tbot.place(i, self._tbot_grippers_hold_index[i], correct_pose = False)
+        for hold_name, gripper_index in zip(self._tbot_grippers_hold_name, range(self._tbot.k)):
+            hold_index = [hold.name for hold in self._tbot.wall.holds].index(hold_name)
+            self._tbot.place(gripper_index, hold_index, correct_pose = True)
 
     def arm_joint_states_sub_callback(self, msg: Float64Array):
         
@@ -132,9 +126,9 @@ class PlannerNode(Node):
 
         self._tbot_grippers_T_world[i] = TransformMatrix(self.pose2mat(msg.pose))
 
-    def gripper_hold_index_sub_callback(self, msg: Int64, i: int):
+    def gripper_hold_name_sub_callback(self, msg: Int64, i: int):
 
-        self._tbot_grippers_hold_index[i] = msg.data
+        self._tbot_grippers_hold_name[i] = msg.data
 
     def set_commands_path_srv_callback(self, request: SetString.Request, response: SetString.Response) -> SetString.Response:
 
@@ -164,7 +158,6 @@ class PlannerNode(Node):
         state = 0
         while True:
             self._rate.sleep()
-            self.get_logger().info(str(state))
             # initialize
             if state == 0:
                 request: PlanTetherbot.Goal = goal_handle.request
@@ -175,6 +168,7 @@ class PlannerNode(Node):
                 self.update_tbot()
                 if request.mode == 0: # plan platform
                     planner = self._platform2pose
+                    self.get_logger().info(str(TransformMatrix(request.goal_pose).decompose()))
                     kwargs = {'pose': TransformMatrix(request.goal_pose)}
                 elif request.mode == 1: # plan arm
                     planner = self._arm2pose
@@ -199,9 +193,7 @@ class PlannerNode(Node):
                               'goal_state': 5}
                 elif request.mode == 5: # plan platform to configuration
                     planner = self._platform2configuration
-                    kwargs = {'grip_idx': request.gripper_index, 
-                              'start_state': 0, 
-                              'goal_state': 5}
+                    kwargs = {'grip_idx': request.gripper_index}
                 elif request.mode == 6: # plan global
                     planner = self._global_planner
                     kwargs = {'start': [self._tbot.wall.holds.index(gripper.parent) for gripper in self._tbot.grippers],
@@ -275,6 +267,7 @@ class PlannerNode(Node):
     def display_state_srv_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
 
         self.update_tbot()
+        
         thread = Thread(target = self.display_func, args = (self._tbot, self._stop_event, CommandList()))
         thread.start()
         # NOTE: The open3d functions are run in a seperate thread as using a timer_callback leads to warnings and lag
@@ -303,7 +296,7 @@ class PlannerNode(Node):
                 else:
                     state = 4
             if state == 1:
-                done = command.do(tbot)
+                done = command.do(tbot, 100)
                 if done:
                     state = 0
                 else:
@@ -311,8 +304,7 @@ class PlannerNode(Node):
             elif state == 4:
                 pass
             
-            vi.update()
-            sleep(0.0167)   
+            vi.update()  
             
     @staticmethod
     def plan_process_func(queue: ProcessQueue, tbot: TbTetherbot, planner: GlobalPlanner, kwargs: dict):                    
@@ -323,97 +315,11 @@ class PlannerNode(Node):
 
         with open(self._planner_config_path, "r") as stream:
             try: 
-                data = yaml.safe_load(stream)
-                self.parse_planner_config(data)
+                self._simulation_dt, self._platform2pose, self._platform2configuration, self._arm2pose, self._local_planner, self._global_planner = yaml2planner(self._planner_config_path)
             except Exception as exc:
                 self.get_logger().error("Failed loading planner configuration file '" + self._planner_config_path + ": '" + str(exc))
             else:
                 self.get_logger().info("Loaded planner configuration file '" + self._planner_config_path + "'")
-
-    def parse_planner_config(self, data: dict):
-        
-        self._simulation_dt = data['simulation']['dt']
-
-        # smoothing algorithms
-        platform_smoother = BsplineSmoother(data['platform']['smoothing']['ds'])
-        arm_smoother = BsplineSmoother(data['arm']['smoothing']['ds'])
-
-        # trajectory generators
-        platform_profiler = ProfileQPlatform(platform_smoother, 
-                                             self._simulation_dt, 
-                                             t_t = None, 
-                                             v_t = data['platform']['profiler']['v_t'],
-                                             qlim = data['platform']['profiler']['q_lim'])
-        arm_profiler = ProfileQArm(arm_smoother, 
-                                   self._simulation_dt, 
-                                   t_t = None, 
-                                   v_t = data['platform']['profiler']['v_t'],
-                                   qlim = data['arm']['profiler']['q_lim'])
-        
-        # local planners
-        self._platform2pose = PlanPlatform2Pose(
-            graph = TbPlatformPoseGraph(goal_dist = data['platform']['planner']['platform_to_pose']['graph']['goal_dist'], 
-                                        goal_skew = data['platform']['planner']['platform_to_pose']['graph']['goal_skew'], 
-                                        directions = data['platform']['planner']['platform_to_pose']['graph']['directions'],
-                                        iter_max = data['platform']['planner']['platform_to_pose']['graph']['iter_max']),
-            profiler = platform_profiler)
-        self._platform2configuration = PlanPlatform2Configuration(
-            graph = TbPlatformPoseGraph(goal_dist = data['platform']['planner']['platform_to_configuration']['graph']['goal_dist'], 
-                                        goal_skew = data['platform']['planner']['platform_to_configuration']['graph']['goal_skew'], 
-                                        directions = data['platform']['planner']['platform_to_configuration']['graph']['directions'],
-                                        iter_max = data['platform']['planner']['platform_to_configuration']['graph']['iter_max']),
-            profiler = platform_profiler,
-            workspace = TbWorkspace(padding = data['platform']['planner']['platform_to_configuration']['workspace']['padding'], 
-                                    scale = data['platform']['planner']['platform_to_configuration']['workspace']['scale'], 
-                                    mode = data['platform']['planner']['platform_to_configuration']['workspace']['mode']))
-        platform2gripper = PlanPlatform2Gripper(
-            graph = TbPlatformAlignGraph(goal_skew = data['platform']['planner']['platform_to_gripper']['graph']['goal_skew'], 
-                                         directions = data['platform']['planner']['platform_to_gripper']['graph']['directions'], 
-                                         iter_max = data['platform']['planner']['platform_to_gripper']['graph']['iter_max']),
-                                         profiler = platform_profiler)
-        platform2hold = PlanPlatform2Hold(
-            graph = TbPlatformAlignGraph(goal_skew = data['platform']['planner']['platform_to_hold']['graph']['goal_skew'], 
-                                         directions = data['platform']['planner']['platform_to_hold']['graph']['directions'], 
-                                         iter_max = data['platform']['planner']['platform_to_hold']['graph']['iter_max']),
-            profiler = platform_profiler)
-        self._arm2pose = PlanArm2Pose(
-            graph = TbArmPoseGraph(goal_dist = data['arm']['planner']['arm_to_pose']['graph']['goal_dist'],
-                                   directions = data['arm']['planner']['arm_to_pose']['graph']['directions'], 
-                                   iter_max = data['arm']['planner']['arm_to_pose']['graph']['iter_max']),
-            profiler = arm_profiler)
-        self._local_planner = PlanPickAndPlace2(
-            platform2configuration = self._platform2configuration,
-            platform2gripper = platform2gripper, 
-            platform2hold = platform2hold, 
-            arm2pose = self._arm2pose)
-        
-        # global planner
-        platform2configuration = FastPlanPlatform2Configuration(
-            workspace = TbWorkspace(padding = data['global']['planner']['fast_platform_to_configuration']['workspace']['padding'], 
-                                    scale = data['global']['planner']['fast_platform_to_configuration']['workspace']['scale'], 
-                                    mode = data['global']['planner']['fast_platform_to_configuration']['workspace']['mode']))
-        platform2gripper = PlanPlatform2Gripper(
-            graph = TbPlatformAlignGraph(goal_skew = data['global']['planner']['platform_to_gripper']['graph']['goal_skew'], 
-                                         directions = data['global']['planner']['platform_to_gripper']['graph']['directions'], 
-                                         iter_max = data['global']['planner']['platform_to_gripper']['graph']['iter_max']),
-            profiler = FastProfile())
-        platform2hold = PlanPlatform2Hold(
-            graph = TbPlatformAlignGraph(goal_skew = data['global']['planner']['platform_to_hold']['graph']['goal_skew'], 
-                                         directions = data['global']['planner']['platform_to_hold']['graph']['directions'], 
-                                         iter_max = data['global']['planner']['platform_to_hold']['graph']['iter_max']),
-            profiler = FastProfile())
-        fast_local_planner = FastPlanPickAndPlace(
-            platform2configuration = platform2configuration,
-            platform2gripper = platform2gripper,
-            platform2hold = platform2hold)
-        self._global_planner = GlobalPlanner(
-            graph = TbGlobalGraph(goal_dist = data['global']['graph']['goal_dist'], 
-                                  planner = fast_local_planner, 
-                                  workspace = TbWorkspace(padding = data['global']['graph']['workspace']['padding'],
-                                                          scale = data['global']['graph']['workspace']['scale'],
-                                                          mode = data['global']['graph']['workspace']['mode']),
-                                  iter_max = data['global']['graph']['iter_max']),
-            localplanner = self._local_planner)
         
     def pose2mat(self, pose: Pose) -> np.ndarray:
 

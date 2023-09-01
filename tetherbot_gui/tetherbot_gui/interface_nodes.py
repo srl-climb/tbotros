@@ -175,8 +175,11 @@ class ActionClientNode(Node):
                 self._send_goal_future.cancel()
             if self._goal_handle is not None:
                 self._cancel_future = self._goal_handle.cancel_goal_async()
+                self._state = 98
+            else:
+                self._state = 99
             self._busy = False
-            self._state = 98
+            
 
         # wait for cancel
         elif self._state == 98:

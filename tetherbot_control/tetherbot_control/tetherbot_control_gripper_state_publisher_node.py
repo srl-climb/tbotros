@@ -148,6 +148,7 @@ class GripperStatePublisherNode(BaseStatePublisherNode):
 
         try: 
             self._hold = self._tbot.wall.get_hold(value)
+            self.get_logger().info('Setting hold to: ' + str(self._hold))
         except Exception as exc:
             self.get_logger().error('Failed setting hold: ' + str(exc))
 

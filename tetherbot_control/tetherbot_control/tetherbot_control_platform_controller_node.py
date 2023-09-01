@@ -11,6 +11,7 @@ from custom_srvs.srv import Tension
 from custom_msgs.msg import BoolArray
 from custom_actions.action import MoveMotor, Empty as EmptyAction
 from std_srvs.srv import Trigger
+from std_msgs.msg import Float64
 from geometry_msgs.msg import PoseStamped, Pose, Vector3
 from tbotlib import TransformMatrix, TetherbotVisualizer
 from math import sqrt

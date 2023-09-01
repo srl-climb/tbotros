@@ -238,6 +238,11 @@ def generate_launch_description():
                           ('/' + tbot.platform.name + '/motor7/position', '/motor7/faulhaber_motor/position'),
                           ('/' + tbot.platform.name + '/motor8/position', '/motor8/faulhaber_motor/position'),
                           ('/' + tbot.platform.name + '/motor9/position', '/motor9/faulhaber_motor/position'),
+                          ('/' + tbot.platform.name + '/' + tbot.grippers[0].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[0].name + '/gripper_state_publisher/pose'),
+                          ('/' + tbot.platform.name + '/' + tbot.grippers[1].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[1].name + '/gripper_state_publisher/pose'),
+                          ('/' + tbot.platform.name + '/' + tbot.grippers[2].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[2].name + '/gripper_state_publisher/pose'),
+                          ('/' + tbot.platform.name + '/' + tbot.grippers[3].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[3].name + '/gripper_state_publisher/pose'),
+                          ('/' + tbot.platform.name + '/' + tbot.grippers[4].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[4].name + '/gripper_state_publisher/pose'),
                           ('/' + tbot.platform.name + '/set_pose', '/zedm/zed_node/set_pose'),
                           ('/' + tbot.platform.name + '/tf_static', '/tf_static'),
                           ('/' + tbot.platform.name + '/tf', '/tf')]

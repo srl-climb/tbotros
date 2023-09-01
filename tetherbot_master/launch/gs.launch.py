@@ -5,7 +5,7 @@ from launch import LaunchDescription, logging
 from launch.actions import IncludeLaunchDescription, Shutdown
 from launch_ros.actions import Node
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from ament_index_python.packages import get_package_prefix, get_package_share_directory
+from ament_index_python.packages import get_package_share_directory
 
 # LINKS:
 # https://answers.ros.org/question/374926/ros2-how-to-launch-rviz2-with-config-file/
@@ -60,7 +60,8 @@ def generate_launch_description():
         executable = 'tetherbot_planner',
         parameters = [{'commands_path': commands_path,
                        'config_file': tbot_desc_path,
-                       'planner_config_path': planner_config_path}]
+                       'planner_config_path': planner_config_path}],
+        output = 'both'
     ))
 
     # command sequencer
