@@ -25,6 +25,10 @@ class TkEntry(tk.Entry):
 
         super().__init__(master, **args)
 
+    def get_data(self):
+
+        return self.get()
+
 
 class TkFloatEntry(TkEntry):
 
@@ -68,12 +72,15 @@ class TkFloatEntry(TkEntry):
         except ValueError:
             return False
 
-
 class TkLabel(tk.Label):
 
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
+
+    def update_data(self, value):
+        
+        self.config(text = value)
 
     
 class TkStringLabel(TkLabel):
@@ -103,7 +110,7 @@ class TkFloatLabel(TkLabel):
         self.config(text = str(round(value, self._digits)))
 
 
-class TkVectorLabel(TkLabel):
+class TkArrayLabel(TkLabel):
 
     def __init__(self, digits: int = 3, length: int = 3, **kwargs):
 
@@ -210,6 +217,10 @@ class TkLabelFrame(tk.LabelFrame):
 
         super().__init__(**kwargs)
 
+    def update_data(self):
+
+        pass
+
 
 class TkPoseLabelFrame(TkLabelFrame):
 
@@ -219,12 +230,12 @@ class TkPoseLabelFrame(TkLabelFrame):
 
         label = TkLabel(master = self, text = 'Position:')
         label.grid(row = 0, column = 0)
-        self.pos_label = TkVectorLabel(master = self, length = 3, digits = 3)
+        self.pos_label = TkArrayLabel(master = self, length = 3, digits = 3)
         self.pos_label.grid(row = 0, column = 1)
 
         label = TkLabel(master = self, text = 'Orientation:')
         label.grid(row = 1, column = 0)
-        self.rot_label = TkVectorLabel(master = self, length = 4, digits = 3)
+        self.rot_label = TkArrayLabel(master = self, length = 4, digits = 3)
         self.rot_label.grid(row = 1, column = 1)
 
     def update_data(self, value: Pose):
@@ -298,6 +309,7 @@ class TkButton(tk.Button):
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
+
 
 class TkCancelButton(tk.Button):
 

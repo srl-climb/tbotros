@@ -5,69 +5,78 @@ import rclpy.subscription
 import rclpy.executors
 import rclpy.impl.rcutils_logger
 import tkinter as tk
-import yaml
 import os
-import sys
 import signal
-from tkinter import filedialog
+import subprocess
+from threading import Thread, Event
+from rclpy.node import Node
 from ament_index_python.packages import get_package_share_directory
 from tbotlib import TbTetherbot
 from .window import Window
-from .planner_window import PlannerWindow
+from .can_network_window import CanNetworkWindow
+from .servo_window import ServoWindow
+from .misc_window import MiscWindow
 from .arm_window import ArmWindow
-from .planner_window import PlannerWindow
-from .platform_window import PlatformWindow
-from .wireless_servo_window import WirelessServoWindow
-from .aruco_detector_window import ArucoDetectorWindow
-from .serial_manager_window import SerialManagerWindow
-from .can_network_motor_controller_window import CanNetworkMotorControllerWindow
 from .gripper_window import GripperWindow
+from .platform_window import PlatformWindow
 from .sequencer_window import SequencerWindow
+from .planner_window import PlannerWindow
 
 class App(tk.Tk):
-    # A class representing an application
 
     def __init__(self):
         super().__init__()
-        # Initialize the superclass tk.Tk
 
-        # Create menubar
+        # create node representing the gui
+        self.node = Node('tetherbot_gui')
+
+        # create menubar
         menubar = tk.Menu(self)
         self.config(menu=menubar)
 
-        # Icon for application and all other windows
+        # icon for application and all other windows
         self.iconphoto(True, tk.PhotoImage(file=os.path.join(get_package_share_directory('tetherbot_gui'), 'icons/srl_icon.png')))
 
-        # Create file menu
+        # title
+        self.title('Tetherbot UI 2.0')
+
+        # create file menu
         file_menu = tk.Menu(menubar)
-        file_menu.add_command(label='Save as...', command=self.save_as_callback)
-        file_menu.add_command(label='Save', command=self.save_callback)
-        file_menu.add_command(label='Load', command=self.load_callback)
-        file_menu.add_separator()
         file_menu.add_command(label='Exit', command=self.destroy)
 
-        # Create tool menu
-        tool_menu = tk.Menu(menubar)
-        tool_menu.add_command(label='Serial Manager', command=lambda: self.open_window_callback(SerialManagerWindow))
-        tool_menu.add_command(label='CAN Network Motor Controller', command=lambda: self.open_window_callback(CanNetworkMotorControllerWindow))
-        tool_menu.add_command(label='Wireless Servo', command=lambda: self.open_window_callback(WirelessServoWindow))
-        tool_menu.add_command(label='Aruco Detector', command=lambda: self.open_window_callback(ArucoDetectorWindow))
-        tool_menu.add_command(label='Gripper', command=lambda: self.open_window_callback(GripperWindow))
-        tool_menu.add_command(label='Arm', command=lambda: self.open_window_callback(ArmWindow))
-        tool_menu.add_command(label='Platform', command=lambda: self.open_window_callback(PlatformWindow))
-        tool_menu.add_command(label='Planner', command=lambda: self.open_window_callback(PlannerWindow))
-        tool_menu.add_command(label='Sequencer', command=lambda: self.open_window_callback(SequencerWindow))
-        tool_menu.add_separator()
-        tool_menu.add_command(label='Close Windows', command=self.close_windows_callback)
+        # create window menu
+        window_menu = tk.Menu(menubar)
+        window_menu.add_command(label='Can Network', command=lambda: self.open_window_callback(CanNetworkWindow))
+        window_menu.add_command(label='Wireless Servo', command=lambda: self.open_window_callback(ServoWindow))
+        window_menu.add_command(label='Misc', command=lambda: self.open_window_callback(MiscWindow))
+        window_menu.add_separator()
+        window_menu.add_command(label='Arm', command=lambda: self.open_window_callback(ArmWindow))
+        window_menu.add_command(label='Gripper', command=lambda: self.open_window_callback(GripperWindow))
+        window_menu.add_command(label='Platform', command=lambda: self.open_window_callback(PlatformWindow))
+        window_menu.add_separator()
+        window_menu.add_command(label='Planner', command=lambda: self.open_window_callback(PlannerWindow))
+        window_menu.add_command(label='Sequencer', command=lambda: self.open_window_callback(SequencerWindow))
+        window_menu.add_separator()
+        window_menu.add_command(label='Preset 1 (all)', command=lambda: self.open_windows_callback([CanNetworkWindow, ServoWindow, MiscWindow, ArmWindow, GripperWindow, PlatformWindow, PlannerWindow, SequencerWindow]))
+        window_menu.add_command(label='Preset 2 (hardware)', command=lambda: self.open_windows_callback([CanNetworkWindow, ServoWindow, MiscWindow]))
+        window_menu.add_separator()
+        window_menu.add_command(label='Close Windows', command=self.close_windows_callback)
 
-        # Add menus to menubar
+        # create tool menu
+        tool_menu = tk.Menu(menubar)
+        tool_menu.add_command(label='Rviz', command=lambda: subprocess.run(['rviz2']))
+        tool_menu.add_command(label='RQT', command=lambda: subprocess.run(['rqt']))
+        tool_menu.add_command(label='RQT Graph', command=lambda: subprocess.run(['rqt_graph']))
+        tool_menu.add_command(label='SSH', command=lambda: subprocess.Popen(["gnome-terminal --title=srl-orin -- sh -c 'cd ~; ssh srl-orin@192.168.1.2; bash'"], shell=True))
+
+        # add menus to menubar
         menubar.add_cascade(label='File', menu=file_menu)
+        menubar.add_cascade(label='Window', menu=window_menu)
         menubar.add_cascade(label='Tools', menu=tool_menu)
 
-        # Initialize attributes
+        # list to store all windows
         self.windows: list[Window] = []
-        self.save_file = '*'
-        
+
         # load tetherbot object from config path
         tbot_desc_file = os.path.join(get_package_share_directory('tbotros_description'), 'desc/tetherbot_light.pkl')
         try:
@@ -75,99 +84,16 @@ class App(tk.Tk):
         except Exception as exc:
             self.get_logger().error('Failed loading tetherbot object: ' + str(exc))
 
-        # add ctrlC support
+        # add ctrl+C support
         signal.signal(signal.SIGINT, self.destroy)
         #self.bind_all('<Control-c>', self.destroy)
         self.check() # causes the terminal to be sampled for events in regular intervals
 
     def check(self): 
+
         self.after(500, self.check) 
 
-    @property
-    def save_file(self) -> str:
-        # Getter for the save_file property
-
-        return self._save_file
-
-    @save_file.setter
-    def save_file(self, value: str):
-        # Setter for the save_file property
-
-        self._save_file = value
-        self.set_title(value)
-
-    def destroy(self, *_):
-
-        super().destroy()
-
-    def save_callback(self):
-        # Callback function for the save command
-
-        if self.save_file == '*':
-            self.save_as_callback()
-            # If save_file is '*', invoke the save_as_callback function
-
-        save_data = {'windows': []}
-
-        for window in self.windows:
-            save_data['windows'].append({})
-            save_data['windows'][-1]['data'] = window.get_data()
-            save_data['windows'][-1]['type'] = window.__class__.__name__
-        # Create a dictionary to store save data for each window
-
-        with open(self.save_file, 'w+') as stream:
-            try:
-                yaml.dump(save_data, stream)
-            except Exception as exc:
-                self.get_logger().error('Error while loading project file :' + exc)
-        # Dump the save data to a YAML file
-
-    def save_as_callback(self):
-        # Callback function for the save as command
-
-        if self.save_file == '*':
-            save_file = '/home/srl-orin/app.yaml'
-        else:
-            save_file = self.save_file
-
-        save_file = filedialog.asksaveasfilename(confirmoverwrite=True, defaultextension='yaml',
-                                                 initialdir=os.path.dirname(save_file),
-                                                 initialfile=os.path.basename(save_file))
-        # Open a save file dialog to choose a file
-
-        if save_file != ():
-            self.save_file = save_file
-            self.save_callback()
-            # If a file is chosen, update the save_file attribute and invoke the save_callback function
-
-    def load_callback(self):
-        # Callback function for the load command
-
-        if self.save_file == '*':
-            save_file = '/home/srl-orin/app.yaml'
-        else:
-            save_file = self.save_file
-
-        save_file = filedialog.askopenfilename(defaultextension='yaml', initialdir=os.path.dirname(save_file),
-                                               initialfile=os.path.basename(save_file))
-        # Open a file dialog to choose a file to load
-
-        with open(save_file, 'r') as stream:
-            try:
-                save_data = yaml.safe_load(stream)
-            except Exception as exc:
-                self.get_logger().error('Error while loading project file :' + exc)
-            else:
-                self.save_file = save_file
-                self.close_windows_callback()
-                for window_data in save_data['windows']:
-                    window_cls = getattr(sys.modules[__name__], window_data['type'])
-                    window = self.add_window(window_cls)
-                    window.set_data(window_data['data'])
-        
-
     def open_window_callback(self, window_cls: type[Window]):
-        # Callback function for opening a window
 
         for window in self.windows:
             if type(window) is window_cls:
@@ -175,17 +101,18 @@ class App(tk.Tk):
                 return
 
         self.add_window(window_cls)
-        # Check if the window is already open, if not, add a new window
+
+    def open_windows_callback(self, window_clss: list[type[Window]]):
+
+        for window_cls in window_clss:
+            self.open_window_callback(window_cls)
 
     def close_windows_callback(self):
-        # Callback function for closing all windows
 
         for window in reversed(self.windows):
             window.destroy()
-        # Destroy all windows in reverse order
 
     def add_window(self, window_cls: type[Window]) -> Window:
-        # Add a new window
 
         window = window_cls(self)
         self.windows.append(window)
@@ -193,37 +120,57 @@ class App(tk.Tk):
         return window
 
     def remove_window(self, window: Window):
-        # Remove a window from the window references in the App class
 
         self.windows.remove(window)
 
     def bring_window_to_front(self, window: Window):
-        # Bring a window to the front
 
         window.lift()
         window.focus_set()
 
-    def set_title(self, prefix: str):
-        # Set the application title
-
-        self.title(prefix + ' - Tetherbot UI')
-
     def get_logger(self) -> rclpy.impl.rcutils_logger.RcutilsLogger:
-        # Get the application logger
 
-        return rclpy.logging.get_logger('tetherbot_gui')
+        return self.node.get_logger()
+    
+    def destroy(self, *_):
+        
+        self.node.destroy_node()
+
+        super().destroy()
+
+    def mainloop(self) -> None:
+
+        stop_event = Event()
+        spin_thread = Thread(target=self.ros_spin_thread, args=(self.node, stop_event))
+        spin_thread.start()
+
+        super().mainloop()
+
+        stop_event.set()
+        spin_thread.join()
+
+    def ros_spin_thread(self, node: Node, stop_event: Event):
+
+        executor = rclpy.executors.SingleThreadedExecutor()
+        executor.add_node(node)
+
+        try:
+            while stop_event.is_set() == False:
+                executor.spin_once(timeout_sec=0.5)
+        except rclpy.executors.ExternalShutdownException:
+            print('hi')
+            pass
+
+        executor.shutdown()
 
 
 def main():
 
     rclpy.init()
 
-    try:
-        app = App()
-        app.mainloop()
-    except:
-        pass
-
+    app = App()
+    app.mainloop()
+    
     rclpy.shutdown()
 
 if __name__ == '__main__':

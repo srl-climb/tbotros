@@ -13,7 +13,7 @@ Panels:
         - /TF1/Frames1
         - /TF1/Tree1
       Splitter Ratio: 0.5
-    Tree Height: 787
+    Tree Height: 814
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -59,20 +59,598 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /robot_description
-      Enabled: false
+      Enabled: true
       Links:
         All Links Enabled: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        anchorpoint0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint10:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint11:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint12:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint13:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint14:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint5:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint6:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint7:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint8:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        anchorpoint9:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        depthsensor0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        dockpoint0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        dockpoint1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        dockpoint2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        dockpoint3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        dockpoint4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        gripper0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        gripper1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        gripper2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        gripper3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        gripper4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        grippoint0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint10:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint11:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint12:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint13:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint14:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint5:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint6:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint7:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint8:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        grippoint9:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hold0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        hold1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        hold2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        hold3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        hold4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        hold5:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        hold6:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        hold7:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        hold8:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        hold9:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        hoverpoint0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint10:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint11:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint12:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint13:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint14:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint5:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint6:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint7:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint8:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hoverpoint9:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        map:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        marker0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        marker1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        marker2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        marker3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        marker4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        platform0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        point0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point10:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point11:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point12:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point13:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point14:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point15:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point16:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point17:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point18:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point19:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point20:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point5:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point6:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point7:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point8:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        point9:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        prismaticlink0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        prismaticlink1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        revolutelink0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        rpparm0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        trianglemesh0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh10:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh11:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh12:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh13:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh14:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh15:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh16:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh17:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh18:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh19:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh20:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh4:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh5:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh6:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh7:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh8:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        trianglemesh9:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        wall0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
       Name: RobotModel
       TF Prefix: ""
       Update Interval: 0
-      Value: false
+      Value: true
       Visual Enabled: true
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: MarkerArray
       Namespaces:
         {}
@@ -82,7 +660,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /visualization_marker_rb
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/TF
       Enabled: true
       Frame Timeout: 15
@@ -118,8 +696,8 @@ Visualization Manager:
           Value: false
         anchorpoint9:
           Value: false
-        base_link:
-          Value: false
+        calibration_target:
+          Value: true
         depthsensor0:
           Value: false
         dockpoint0:
@@ -146,6 +724,16 @@ Visualization Manager:
           Value: false
         grippoint1:
           Value: false
+        grippoint10:
+          Value: true
+        grippoint11:
+          Value: true
+        grippoint12:
+          Value: true
+        grippoint13:
+          Value: true
+        grippoint14:
+          Value: true
         grippoint2:
           Value: false
         grippoint3:
@@ -172,10 +760,30 @@ Visualization Manager:
           Value: false
         hold4:
           Value: false
+        hold5:
+          Value: true
+        hold6:
+          Value: true
+        hold7:
+          Value: true
+        hold8:
+          Value: true
+        hold9:
+          Value: true
         hoverpoint0:
           Value: false
         hoverpoint1:
           Value: false
+        hoverpoint10:
+          Value: true
+        hoverpoint11:
+          Value: true
+        hoverpoint12:
+          Value: true
+        hoverpoint13:
+          Value: true
+        hoverpoint14:
+          Value: true
         hoverpoint2:
           Value: false
         hoverpoint3:
@@ -206,8 +814,6 @@ Visualization Manager:
           Value: false
         motive_origin:
           Value: true
-        odom:
-          Value: false
         platform0:
           Value: false
         point0:
@@ -226,8 +832,18 @@ Visualization Manager:
           Value: false
         point15:
           Value: false
+        point16:
+          Value: true
+        point17:
+          Value: true
+        point18:
+          Value: true
+        point19:
+          Value: true
         point2:
           Value: false
+        point20:
+          Value: true
         point3:
           Value: false
         point4:
@@ -250,6 +866,10 @@ Visualization Manager:
           Value: false
         rpparm0:
           Value: false
+        tbot_center:
+          Value: true
+        tbot_motive_origin:
+          Value: true
         trianglemesh0:
           Value: false
         trianglemesh1:
@@ -266,8 +886,18 @@ Visualization Manager:
           Value: false
         trianglemesh15:
           Value: false
+        trianglemesh16:
+          Value: true
+        trianglemesh17:
+          Value: true
+        trianglemesh18:
+          Value: true
+        trianglemesh19:
+          Value: true
         trianglemesh2:
           Value: false
+        trianglemesh20:
+          Value: true
         trianglemesh3:
           Value: false
         trianglemesh4:
@@ -284,20 +914,6 @@ Visualization Manager:
           Value: false
         wall0:
           Value: false
-        zedm_base_link:
-          Value: false
-        zedm_camera_center:
-          Value: false
-        zedm_imu_link:
-          Value: false
-        zedm_left_camera_frame:
-          Value: false
-        zedm_left_camera_optical_frame:
-          Value: false
-        zedm_right_camera_frame:
-          Value: false
-        zedm_right_camera_optical_frame:
-          Value: false
       Marker Scale: 1
       Name: TF
       Show Arrows: true
@@ -305,20 +921,82 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          motive_origin:
+          calibration_target:
             {}
-          odom:
-            base_link:
-              zedm_base_link:
-                zedm_camera_center:
-                  zedm_left_camera_frame:
-                    zedm_imu_link:
-                      {}
-                    zedm_left_camera_optical_frame:
-                      {}
-                  zedm_right_camera_frame:
-                    zedm_right_camera_optical_frame:
-                      {}
+          gripper0:
+            anchorpoint10:
+              {}
+            dockpoint0:
+              {}
+            grippoint10:
+              {}
+            hoverpoint10:
+              {}
+            marker0:
+              {}
+            trianglemesh16:
+              point16:
+                {}
+          gripper1:
+            anchorpoint11:
+              {}
+            dockpoint1:
+              {}
+            grippoint11:
+              {}
+            hoverpoint11:
+              {}
+            marker1:
+              {}
+            trianglemesh17:
+              point17:
+                {}
+          gripper2:
+            anchorpoint12:
+              {}
+            dockpoint2:
+              {}
+            grippoint12:
+              {}
+            hoverpoint12:
+              {}
+            marker2:
+              {}
+            trianglemesh18:
+              point18:
+                {}
+          gripper3:
+            anchorpoint13:
+              {}
+            dockpoint3:
+              {}
+            grippoint13:
+              {}
+            hoverpoint13:
+              {}
+            marker3:
+              {}
+            trianglemesh19:
+              point19:
+                {}
+          gripper4:
+            anchorpoint14:
+              {}
+            dockpoint4:
+              {}
+            grippoint14:
+              {}
+            hoverpoint14:
+              {}
+            marker4:
+              {}
+            trianglemesh20:
+              point20:
+                {}
+          motive_origin:
+            tbot_motive_origin:
+              tbot_center:
+                {}
           platform0:
             anchorpoint0:
               {}
@@ -346,20 +1024,20 @@ Visualization Manager:
               revolutelink0:
                 prismaticlink0:
                   prismaticlink1:
-                    trianglemesh8:
-                      point8:
+                    trianglemesh13:
+                      point13:
                         {}
-                  trianglemesh7:
-                    point7:
+                  trianglemesh12:
+                    point12:
                       {}
-                trianglemesh6:
-                  point6:
+                trianglemesh11:
+                  point11:
                     {}
-              trianglemesh9:
-                point9:
+              trianglemesh14:
+                point14:
                   {}
-            trianglemesh10:
-              point10:
+            trianglemesh15:
+              point15:
                 {}
           wall0:
             hold0:
@@ -402,10 +1080,62 @@ Visualization Manager:
               trianglemesh4:
                 point4:
                   {}
-            trianglemesh5:
-              point5:
+            hold5:
+              grippoint5:
+                {}
+              hoverpoint5:
+                {}
+              trianglemesh5:
+                point5:
+                  {}
+            hold6:
+              grippoint6:
+                {}
+              hoverpoint6:
+                {}
+              trianglemesh6:
+                point6:
+                  {}
+            hold7:
+              grippoint7:
+                {}
+              hoverpoint7:
+                {}
+              trianglemesh7:
+                point7:
+                  {}
+            hold8:
+              grippoint8:
+                {}
+              hoverpoint8:
+                {}
+              trianglemesh8:
+                point8:
+                  {}
+            hold9:
+              grippoint9:
+                {}
+              hoverpoint9:
+                {}
+              trianglemesh9:
+                point9:
+                  {}
+            trianglemesh10:
+              point10:
                 {}
       Update Interval: 0
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        "": true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /visualization_publisher/tether_line
       Value: true
   Enabled: true
   Global Options:
@@ -450,7 +1180,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.624415159225464
+      Distance: 1.979697585105896
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -465,24 +1195,24 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0753992795944214
+      Pitch: 0.4903998374938965
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.70359468460083
+      Yaw: 4.143589019775391
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1016
+  Height: 1043
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000002c10000039efc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d0000039e000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f0000039efc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003d0000039e000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004420000003efc0100000002fb0000000800540069006d00650100000000000004420000000000000000fb0000000800540069006d006501000000000000045000000000000000000000035c0000039e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001ff000003b9fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d000003b9000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000003b9fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003d000003b9000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004420000003efc0100000002fb0000000800540069006d00650100000000000004420000000000000000fb0000000800540069006d0065010000000000000450000000000000000000000466000003b900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Tool Properties:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1848
-  X: 72
-  Y: 27
+  Width: 1920
+  X: 3840
+  Y: 0

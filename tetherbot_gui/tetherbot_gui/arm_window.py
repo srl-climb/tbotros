@@ -1,12 +1,10 @@
 from __future__ import annotations
-import tkinter as tk
-from std_msgs.msg import Bool, Int8
-from std_srvs.srv import Empty as EmptyService
-from custom_msgs.msg import Float64Array
-from custom_actions.action import Empty as EmptyAction
-from geometry_msgs.msg import Pose, PoseStamped
+from typing import TYPE_CHECKING
+from .tkinter_objects import TkLabelFrame, TkLabel, TkBoolLabel, TkButton, \
+    TkCancelButton, TkActionStatusLabel, TkPoseLabelFrame, TkArrayLabel
+from .interfaces import BoolMsgInterface, Int8MsgInterface, EmptySrvInterface, \
+    PoseStampedMsgInterface, PoseMsgInterface, Float64ArrayMsgInterface, EmptyActionInterface
 from .window import Window
-from typing import TYPE_CHECKING, Dict, List
 
 if TYPE_CHECKING:
     from .tetherbot_gui import App
@@ -14,147 +12,98 @@ if TYPE_CHECKING:
 
 class ArmWindow(Window):
 
-    def __init__(self, parent: App, title: str = 'Arm Window'):
-
-        super().__init__(parent, title)
-
-    def create_user_interface(self):
-
-        self._actual_pose_node = self.create_subscriber_node(msg_type = PoseStamped, 
-                                                             msg_name = self.parent.tbot.platform.arm.name + '/arm_state_publisher/pose')
-        self._target_pose_node = self.create_subscriber_node(msg_type = Pose, 
-                                                             msg_name = self.parent.tbot.platform.arm.name + '/arm_controller/target_pose')
-        self._joint_states_node = self.create_subscriber_node(msg_type = Float64Array, 
-                                                              msg_name = self.parent.tbot.platform.arm.name + '/arm_state_publisher/joint_states')
-        self._control_enabled_node = self.create_subscriber_node(msg_type = Bool, 
-                                                                 msg_name = self.parent.tbot.platform.arm.name + '/arm_controller/control_enabled')
-        self._servo_close_node = self.create_subscriber_node(msg_type = Int8,
-                                                             msg_name = self.parent.tbot.platform.arm.name + '/wireless_servo_peripheral/servo_closed')
-        self._contact_switch_node = self.create_subscriber_node(msg_type = Bool,
-                                                                msg_name = self.parent.tbot.platform.arm.name + '/wireless_servo_peripheral/limitswitch0')
-        self._contact_confirmed_node = self.create_subscriber_node(msg_type = Bool,
-                                                                   msg_name = self.parent.tbot.platform.arm.name + '/docking_controller/contact_confirmed')
-        self._enable_control_node = self.create_client_node(srv_type = EmptyService, enable_response = False,
-                                                            srv_name = self.parent.tbot.platform.arm.name + '/arm_controller/enable_control')
-        self._disable_control_node = self.create_client_node(srv_type = EmptyService, enable_response = False,
-                                                             srv_name = self.parent.tbot.platform.arm.name + '/arm_controller/disable_control')
-        self._confirm_contact_node = self.create_client_node(srv_type = EmptyService, enable_response = False,
-                                                             srv_name = self.parent.tbot.platform.arm.name + '/docking_controller/confirm_contact')
-        self._open_action_node = self.create_action_client_node(action_type = EmptyAction, enable_feedback = False,
-                                                                action_name = self.parent.tbot.platform.arm.name + '/docking_controller/open')
-        self._close_action_node = self.create_action_client_node(action_type = EmptyAction, enable_feedback = False,
-                                                                 action_name = self.parent.tbot.platform.arm.name + '/docking_controller/close')
+    def __init__(self, master: App, title: str = 'Arm'):
         
-        state_frame = self.create_label_frame(master = self, text = 'State')
+        super().__init__(master, title, icon_file='srl_icon_arm.png')
+
+    def create_ui(self):
+
+        state_frame = TkLabelFrame(master = self, text = 'State')
         state_frame.grid(row = 0, column = 0)
 
-        self._actual_pose_label_frame = self.create_pose_label_frame(master = state_frame, text = 'Actual Pose:')
-        self._actual_pose_label_frame.grid(row = 0, column = 0, columnspan = 2)
-        self._target_pose_label_frame = self.create_pose_label_frame(master = state_frame, text = 'Target Pose:')
-        self._target_pose_label_frame.grid(row = 1, column = 0, columnspan = 2)
+        label_frame = TkPoseLabelFrame(master = state_frame, text = 'Actual Pose:')
+        label_frame.grid(row = 0, column = 0, columnspan = 2)
 
-        label = self.create_label(master = state_frame, text = 'Joint States:')
+        PoseStampedMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/arm_state_publisher/pose', label_frame=label_frame)
+
+        label_frame = TkPoseLabelFrame(master = state_frame, text = 'Target Pose:')
+        label_frame.grid(row = 1, column = 0, columnspan = 2)
+
+        PoseMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/arm_controller/target_pose', label_frame=label_frame)
+
+        label = TkLabel(master = state_frame, text = 'Joint States:')
         label.grid(row = 2, column = 0)
-        self._joint_states_label = self.create_vector_label(length = len(self.parent.tbot.platform.arm.links), digits = 3, master = state_frame)
-        self._joint_states_label.grid(row = 2, column = 1)
+        label = TkArrayLabel(length = len(self.master.tbot.platform.arm.links), digits = 3, master = state_frame)
+        label.grid(row = 2, column = 1)
 
-        label = self.create_label(master = state_frame, text = 'Control Enabled:')
+        Float64ArrayMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/arm_state_publisher/joint_states', label=label)
+
+        label = TkLabel(master = state_frame, text = 'Control Enabled:')
         label.grid(row = 3, column = 0)
-        self._control_enabled_label = self.create_bool_label(master = state_frame)
-        self._control_enabled_label.grid(row = 3, column = 1)
+        label = TkBoolLabel(master = state_frame)
+        label.grid(row = 3, column = 1)
 
-        label = self.create_label(master = state_frame, text = 'Closed: ')
+        BoolMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/arm_controller/control_enabled', label=label)
+
+        label = TkLabel(master = state_frame, text = 'Closed: ')
         label.grid(row = 4, column = 0)
-        self._closed_label = self.create_bool_label(master = state_frame)
-        self._closed_label.grid(row = 4, column = 1)
+        label = TkBoolLabel(master = state_frame)
+        label.grid(row = 4, column = 1)
 
-        label = self.create_label(master = state_frame, text = 'Contact Switch:')
+        Int8MsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/wireless_servo_peripheral/servo_closed', label=label)
+
+        label = TkLabel(master = state_frame, text = 'Contact Switch:')
         label.grid(row = 5, column = 0)
-        self._contact_switch_label = self.create_bool_label(master = state_frame)
-        self._contact_switch_label.grid(row = 5, column = 1)
+        contact_switch_label = TkBoolLabel(master = state_frame)
+        contact_switch_label.grid(row = 5, column = 1)
 
-        label = self.create_label(master = state_frame, text = 'Contact Confirmed:')
+        BoolMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/wireless_servo_peripheral/limitswitch0', label=label)
+
+        label = TkLabel(master = state_frame, text = 'Contact Confirmed:')
         label.grid(row = 6, column = 0)
-        self._contact_confirmed_label = self.create_bool_label(master = state_frame)
-        self._contact_confirmed_label.grid(row = 6, column = 1)
+        contact_confirmed_label = TkBoolLabel(master = state_frame)
+        contact_confirmed_label.grid(row = 6, column = 1)
 
-        service_frame = self.create_label_frame(master = self, text = 'Services')
+        BoolMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/docking_controller/contact_confirmed', label=label)
+
+        service_frame = TkLabelFrame(master = self, text = 'Services')
         service_frame.grid(row = 1, column = 0)
 
-        self._enable_control_button = self.create_button(master = service_frame, text = 'Enable Control', command = self.enable_control_button_callback)
-        self._enable_control_button.grid(row = 0, column = 0)
-        self._disable_control_button = self.create_button(master = service_frame, text = 'Disable Control', command = self.disable_control_button_callback)
-        self._disable_control_button.grid(row = 1, column = 0)
-        self._confirm_contact_button = self.create_button(master = service_frame, text = 'Confirm Contact', command = self.confirm_contact_button_callback)
-        self._confirm_contact_button.grid(row = 2, column = 0)
+        button = TkButton(master = service_frame, text = 'Enable Control')
+        button.grid(row = 0, column = 0)
+
+        EmptySrvInterface(master=self, srv_name=self.master.tbot.platform.arm.name + '/arm_controller/enable_control', button=button)
+
+        button = TkButton(master = service_frame, text = 'Disable Control')
+        button.grid(row = 1, column = 0)
+
+        EmptySrvInterface(master=self, srv_name=self.master.tbot.platform.arm.name + '/arm_controller/disable_control', button=button)
+
+        button = TkButton(master = service_frame, text = 'Confirm Contact')
+        button.grid(row = 2, column = 0)
+
+        EmptySrvInterface(master=self, srv_name=self.master.tbot.platform.arm.name + '/docking_controller/confirm_contact', button=button)
         
-        action_frame = self.create_label_frame(master = self, text = 'Actions')
+        action_frame = TkLabelFrame(master = self, text = 'Actions')
         action_frame.grid(row = 2, column = 0)
 
-        self._open_button = self.create_button(master = action_frame, text = 'Open', command = self.open_button_callback)
-        self._open_button.grid(row = 0, column = 0, columnspan = 2)
-        self._close_button = self.create_button(master = action_frame, text = 'Close', command = self.close_button_callback)
-        self._close_button.grid(row = 1, column = 0, columnspan = 2)
-        self._cancel_button = self.create_cancel_button(master = action_frame, command = self.cancel_button_callback)
-        self._cancel_button.grid(row = 2, column = 0, columnspan = 2)
-
-        label = self.create_label(master = action_frame, text = 'Status:')
+        execute_open_button = TkButton(master = action_frame, text = 'Open')
+        execute_open_button.grid(row = 0, column = 0, columnspan = 2)
+        execute_close_button = TkButton(master = action_frame, text = 'Close')
+        execute_close_button.grid(row = 1, column = 0, columnspan = 2)
+        cancel_button = TkCancelButton(master = action_frame)
+        cancel_button.grid(row = 2, column = 0, columnspan = 2)
+        label = TkLabel(master = action_frame, text = 'Status:')
         label.grid(row = 3, column = 0)
-        self._status_label = self.create_action_status_label(master = action_frame)
-        self._status_label.grid(row = 3, column = 1)
+        status_label = TkActionStatusLabel(master = action_frame)
+        status_label.grid(row = 3, column = 1)
 
-        self.create_timer(callback = self.timer_callback, timeout_ms = 100)
-
-    def timer_callback(self):
-
-        if not self._actual_pose_node.msg_queue.empty():
-            msg: PoseStamped = self._actual_pose_node.msg_queue.get()
-            self._actual_pose_label_frame.update_data(msg.pose)
-        if not self._target_pose_node.msg_queue.empty():
-            msg: Pose = self._target_pose_node.msg_queue.get()
-            self._target_pose_label_frame.update_data(msg)
-        if not self._joint_states_node.msg_queue.empty():
-            msg: Float64Array = self._joint_states_node.msg_queue.get()
-            self._joint_states_label.update_data(msg.data)
-        if not self._control_enabled_node.msg_queue.empty():
-            msg: Bool = self._control_enabled_node.msg_queue.get()
-            self._control_enabled_label.update_data(msg.data)
-        if not self._servo_close_node.msg_queue.empty():
-            msg: Int8 = self._servo_close_node.msg_queue.get()
-            self._closed_label.update_data(msg.data)
-        if not self._contact_switch_node.msg_queue.empty():
-            msg: Bool = self._contact_switch_node.msg_queue.get()
-            self._contact_switch_label.update_data(msg.data)
-        if not self._contact_confirmed_node.msg_queue.empty():
-            msg: Bool = self._contact_confirmed_node.msg_queue.get()
-            self._contact_confirmed_label.update_data(msg.data)
-        if not self._open_action_node.status_queue.empty():
-            self._status_label.update_data(self._open_action_node.status_queue.get())
-        if not self._close_action_node.status_queue.empty():
-            self._status_label.update_data(self._close_action_node.status_queue.get())
+        open_action_interface = EmptyActionInterface(master=self, action_name= self.master.tbot.platform.arm.name + '/docking_controller/open',
+                                                     execute_button=execute_open_button, cancel_button=cancel_button, status_label=status_label)
         
-    def enable_control_button_callback(self):
-
-        self._enable_control_node.req_queue.put(EmptyService.Request())
-
-    def disable_control_button_callback(self):
-
-        self._disable_control_node.req_queue.put(EmptyService.Request())
-
-    def confirm_contact_button_callback(self):
-
-        self._confirm_contact_node.req_queue.put(EmptyService.Request())
-
-    def open_button_callback(self):
-
-        self._open_action_node.goal_queue.put(EmptyAction.Goal())
-
-    def close_button_callback(self):
-
-        self._close_action_node.goal_queue.put(EmptyAction.Goal())
-
-    def cancel_button_callback(self):
-
-        self._open_action_node.cancel_event.set()
-        self._close_action_node.cancel_event.set()
-    
+        close_action_interface = EmptyActionInterface(master=self, action_name= self.master.tbot.platform.arm.name + '/docking_controller/close',
+                                                      execute_button=execute_close_button, cancel_button=cancel_button, status_label=status_label)
+        
+        # share the cancel button between both interfaces
+        cancel_button.configure(command=lambda interfaces=[open_action_interface, close_action_interface]:
+                                        [interface.cancel_button_callback() for interface in interfaces])

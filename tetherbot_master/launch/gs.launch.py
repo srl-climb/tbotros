@@ -4,7 +4,7 @@ import os
 from launch import LaunchDescription, logging
 from launch.actions import IncludeLaunchDescription, Shutdown
 from launch_ros.actions import Node
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.launch_description_sources import AnyLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 
 # LINKS:
@@ -13,7 +13,7 @@ from ament_index_python.packages import get_package_share_directory
 
 commands_path = '/home/climb/ros2_ws/commands/commands.pkl'
 enable_gui = False
-enable_optitrack = False
+enable_optitrack = True
 enable_rviz = False
 
 logging.get_logger('launch').info(''' 
@@ -83,7 +83,7 @@ def generate_launch_description():
     # optitrack
     if enable_optitrack:
         executables.append(IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
+            AnyLaunchDescriptionSource(
                 os.path.join(get_package_share_directory('tetherbot_optitrack'), 'launch', 'tetherbot_optitrack.launch.xml'))
             ))
         

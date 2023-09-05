@@ -1,4 +1,4 @@
-a = 'a*'
-b = 'a'
+a = 1
 
-print(a==b)
+for element in a:
+    print(a)

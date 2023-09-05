@@ -18,7 +18,7 @@ class ROS2TetherbotCoordinateSystemCalibrationNode(Node):
     def __init__(self):
         super().__init__('tbot_center_correction_node')
 
-        self.calib_srv = self.create_service(Empty, 'tetherbot_coordinate_calibration_service', self.coordinate_calib_srv)
+        self.calib_srv = self.create_service(Empty, self.get_name() + '/tetherbot_coordinate_calibration_service', self.coordinate_calib_srv)
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.tf_static_broadcaster = StaticTransformBroadcaster(self)

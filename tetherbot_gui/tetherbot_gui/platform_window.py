@@ -1,13 +1,10 @@
 from __future__ import annotations
-import tkinter as tk
-from std_msgs.msg import Bool, String, Float64
-from std_srvs.srv import Trigger, Empty as EmptyService
-from custom_msgs.msg import Float64Array, BoolArray
-from custom_srvs.srv import SetString, Tension
-from custom_actions.action import Empty as EmptyAction
-from geometry_msgs.msg import PoseStamped
-from .window import Window
 from typing import TYPE_CHECKING
+from .tkinter_objects import TkLabelFrame, TkLabel, TkBoolLabel, TkButton, TkStringLabel, \
+    TkCancelButton, TkActionStatusLabel, TkPoseLabelFrame, TkArrayLabel, TkOptionMenu, TkFloatLabel
+from .interfaces import BoolMsgInterface, TensionSrvInterface, EmptySrvInterface, StringMsgInterface, TriggerSrvInterface, \
+    PoseStampedMsgInterface, SetStringSrvInterface, Float64ArrayMsgInterface, EmptyActionInterface, BoolArrayMsgInterface, Float64MsgInterface
+from .window import Window
 
 if TYPE_CHECKING:
     from .tetherbot_gui import App
@@ -15,197 +12,122 @@ if TYPE_CHECKING:
 
 class PlatformWindow(Window):
 
-    def __init__(self, parent: App, title: str = 'Platform Window'):
-
-        super().__init__(parent, title)
-
-    def create_user_interface(self):
-
-        self._gripper_names = [gripper.name for gripper in self.parent.tbot.grippers]
-
-        self._actual_pose_node = self.create_subscriber_node(msg_type = PoseStamped, 
-                                                             msg_name = self.parent.tbot.platform.name + '/platform_state_publisher/pose')
-        self._target_pose_node = self.create_subscriber_node(msg_type = PoseStamped, 
-                                                             msg_name = self.parent.tbot.platform.name + '/platform_controller/target_pose')
-        self._joint_states_node = self.create_subscriber_node(msg_type = Float64Array, 
-                                                              msg_name = self.parent.tbot.platform.name + '/platform_state_publisher/joint_states')
-        self._control_enabled_node = self.create_subscriber_node(msg_type = Bool, 
-                                                                 msg_name = self.parent.tbot.platform.name + '/platform_controller/control_enabled')
-        self._transform_source_node = self.create_subscriber_node(msg_type = String,
-                                                                  msg_name = self.parent.tbot.platform.name + '/platform_state_publisher/transform_source')
-        self._tether_tension_node = self.create_subscriber_node(msg_type = BoolArray,
-                                                                msg_name = self.parent.tbot.platform.name + '/platform_controller/tether_tension')
-        self._stability_node = self.create_subscriber_node(msg_type = Float64,
-                                                           msg_name = self.parent.tbot.platform.name + '/platform_state_publisher/stability')
-        self._enable_control_node = self.create_client_node(srv_type = EmptyService, enable_response = False,
-                                                            srv_name = self.parent.tbot.platform.name + '/platform_controller/enable_control')
-        self._disable_control_node = self.create_client_node(srv_type = EmptyService, enable_response = False, 
-                                                             srv_name = self.parent.tbot.platform.name + '/platform_controller/disable_control')
-        self._set_transform_source_node = self.create_client_node(srv_type = SetString, enable_response = False,
-                                                                  srv_name = self.parent.tbot.platform.name + '/platform_state_publisher/set_transform_source')
-        self._calibrate_zed_pose_node = self.create_client_node(srv_type = Trigger,
-                                                                srv_name = self.parent.tbot.platform.name + '/platform_state_publisher/calibrate_zed_pose')
-        self._tension_tethers_node = self.create_client_node(srv_type = Tension,
-                                                                    srv_name = self.parent.tbot.platform.name + '/platform_controller/tension_gripper_tethers')
-        self._calibrate_tether_lengths_node = self.create_action_client_node(action_type = EmptyAction,
-                                                                             action_name = self.parent.tbot.platform.name + '/platform_controller/calibrate_tether_lengths')
+    def __init__(self, master: App, title: str = 'Platform'):
         
-        state_frame = self.create_label_frame(master = self, text = 'State')
-        state_frame.grid(row = 0, column = 0)
+        super().__init__(master, title, icon_file='srl_icon_plat.png')
 
-        self._actual_pose_label_frame = self.create_pose_label_frame(master = state_frame, text = 'Actual Pose:')
-        self._actual_pose_label_frame.grid(row = 0, column = 0, columnspan = 2)
-        self._target_pose_label_frame = self.create_pose_label_frame(master = state_frame, text = 'Target Pose:')
-        self._target_pose_label_frame.grid(row = 1, column = 0, columnspan = 2)
+    def create_ui(self):
 
-        label = self.create_label(master = state_frame, text = 'Joint States:')
-        label.grid(row = 2, column = 0)
-        self._joint_states_label = self.create_vector_label(length = self.parent.tbot.platform.m, digits = 3, master = state_frame)
-        self._joint_states_label.grid(row = 2, column = 1)
+        gripper_names = [gripper.name for gripper in self.master.tbot.grippers]
 
-        label = self.create_label(master = state_frame, text = 'Control Enabled:')
-        label.grid(row = 3, column = 0)
-        self._control_enabled_label = self.create_bool_label(master = state_frame)
-        self._control_enabled_label.grid(row = 3, column = 1)
+        state_frame = TkLabelFrame(master=self, text='State')
+        state_frame.grid(row=0, column=0)
 
-        label = self.create_label(master = state_frame, text = 'Transform Source:')
-        label.grid(row = 4, column = 0)
-        self._transform_source_label = self.create_string_label(master = state_frame)
-        self._transform_source_label.grid(row = 4, column = 1)
+        label_frame = TkPoseLabelFrame(master=state_frame, text='Actual Pose:')
+        label_frame.grid(row=0, column=0, columnspan=2)
 
-        label = self.create_label(master = state_frame, text = 'Tether Tension:')
-        label.grid(row = 5, column = 0)
-        self._tether_tension_label = self.create_vector_label(master = state_frame, length = self.parent.tbot.platform.m, digits = 0)
-        self._tether_tension_label.grid(row = 5, column = 1)
+        PoseStampedMsgInterface(master=self, msg_name=self.master.tbot.platform.name + '/platform_state_publisher/pose', label_frame=label_frame)
 
-        label = self.create_label(master = state_frame, text = 'Stability:')
-        label.grid(row = 6, column = 0)
-        self._stability_label = self.create_float_label(master = state_frame, digits = 3)
-        self._stability_label.grid(row = 6, column = 1)
+        label_frame = TkPoseLabelFrame(master=state_frame, text='Target Pose:')
+        label_frame.grid(row=1, column=0, columnspan=2)
 
-        service_frame = self.create_label_frame(master = self, text = 'Services')
-        service_frame.grid(row = 1, column = 0)
+        PoseStampedMsgInterface(master=self, msg_name=self.master.tbot.platform.name + '/platform_controller/target_pose', label_frame=label_frame)
 
-        self._enable_control_button = self.create_button(master = service_frame, text = 'Enable Control', command = self.enable_control_button_callback)
-        self._enable_control_button.grid(row = 0, column = 0, columnspan = 2)
+        label = TkLabel(master=state_frame, text='Joint States:')
+        label.grid(row=2, column=0)
+        label = TkArrayLabel(length=self.master.tbot.platform.m, digits=3, master=state_frame)
+        label.grid(row=2, column=1)
+
+        Float64ArrayMsgInterface(master=self, msg_name=self.master.tbot.platform.name + '/platform_state_publisher/joint_states', label=label)
+
+        label = TkLabel(master=state_frame, text='Control Enabled:')
+        label.grid(row=3, column=0)
+        label = TkBoolLabel(master=state_frame)
+        label.grid(row=3, column=1)
+
+        BoolMsgInterface(master=self, msg_name=self.master.tbot.platform.name + '/platform_controller/control_enabled', label=label)
+
+        label = TkLabel(master=state_frame, text='Transform Source:')
+        label.grid(row=4, column=0)
+        label = TkStringLabel(master=state_frame)
+        label.grid(row=4, column=1)
+
+        StringMsgInterface(master=self, msg_name=self.master.tbot.platform.name + '/platform_state_publisher/transform_source', label=label)
+
+        label = TkLabel(master=state_frame, text='Tether Tension:')
+        label.grid(row=5, column=0)
+        label = TkArrayLabel(master=state_frame, length=self.master.tbot.platform.m, digits=0)
+        label.grid(row=5, column=1)
+
+        BoolArrayMsgInterface(master=self, msg_name=self.master.tbot.platform.name + '/platform_controller/tether_tension', label=label)
+
+        label = TkLabel(master=state_frame, text='Stability:')
+        label.grid(row=6, column=0)
+        label = TkFloatLabel(master=state_frame, digits=3)
+        label.grid(row=6, column=1)
+
+        Float64MsgInterface(master=self, msg_name=self.master.tbot.platform.name + '/platform_state_publisher/stability', label=label)
+
+        service_frame = TkLabelFrame(master=self, text='Services')
+        service_frame.grid(row=1, column=0)
+
+        button = TkButton(master=service_frame, text='Enable Control')
+        button.grid(row=0, column=0, columnspan=2)
+
+        EmptySrvInterface(master=self, srv_name=self.master.tbot.platform.name + '/platform_controller/enable_control', button=button)
         
-        self._disable_control_button = self.create_button(master = service_frame, text = 'Disable Control', command = self.disable_control_button_callback)
-        self._disable_control_button.grid(row = 1, column = 0, columnspan = 2)
+        button = TkButton(master=service_frame, text='Disable Control')
+        button.grid(row=1, column=0, columnspan=2)
+
+        EmptySrvInterface(master=self, srv_name=self.master.tbot.platform.name + '/platform_controller/disable_control', button=button)
         
-        label = self.create_label(master = service_frame, text = 'Transform Source:')
-        label.grid(row = 2, column = 0)
-        self._set_transform_source_optionmenu = self.create_option_menu(master = service_frame, values = ['optitrack', 'zed', 'fwk'])
-        self._set_transform_source_optionmenu.grid(row = 2, column = 1)
-        self._set_transform_source_button = self.create_button(master = service_frame, text = 'Set Transform Source', command = self.set_transform_source_button_callback)
-        self._set_transform_source_button.grid(row = 3, column = 0, columnspan = 2)
+        label = TkLabel(master=service_frame, text='Transform Source:')
+        label.grid(row=2, column=0)
+        option_menu = TkOptionMenu(master=service_frame, values=['optitrack', 'zed', 'fwk'])
+        option_menu.grid(row=2, column=1)
+        button = TkButton(master=service_frame, text='Set Transform Source')
+        button.grid(row=3, column=0, columnspan=2)
 
-        label = self.create_label(master = service_frame, text = 'Gripper Name:')
-        label.grid(row = 4, column = 0)
-        self._tension_tethers_optionmenu = self.create_option_menu(master = service_frame, values = self._gripper_names)
-        self._tension_tethers_optionmenu.grid(row = 4, column = 1)
-        self._tension_tethers_button = self.create_button(master = service_frame, text = 'Tension Tethers', command = self.tension_tethers_button_callback)
-        self._tension_tethers_button.grid(row = 5, column = 0, columnspan = 2)
-        self._tension_tethers_button = self.create_button(master = service_frame, text = 'Untension Tethers', command = self.untension_tethers_button_callback)
-        self._tension_tethers_button.grid(row = 6, column = 0, columnspan = 2)
+        SetStringSrvInterface(master=self, srv_name=self.master.tbot.platform.name + '/platform_state_publisher/set_transform_source', 
+                              button=button, entry=option_menu)
 
-        self._calibrate_zed_pose_button = self.create_button(master = service_frame, text = 'Calibrate ZED Pose')
-        self._calibrate_zed_pose_button.grid(row = 7, column = 0, columnspan = 2)
+        label = TkLabel(master=service_frame, text='Gripper Name:')
+        label.grid(row=4, column=0)
+        option_menu = TkOptionMenu(master=service_frame, values=gripper_names)
+        option_menu.grid(row=4, column=1)
+        label = TkLabel(master=service_frame, text='Status:')
+        label.grid(row=8, column=0)
+        success_label = TkBoolLabel(master=service_frame)
+        success_label.grid(row=8, column=1)
+        button = TkButton(master=service_frame, text='Tension Tethers')
+        button.grid(row=5, column=0, columnspan=2)
 
-        label = self.create_label(master = service_frame, text = 'Status:')
-        label.grid(row = 8, column = 0)
-        self._success_label = self.create_bool_label(master = service_frame)
-        self._success_label.grid(row = 8, column = 1)
+        TensionSrvInterface(master=self, srv_name=self.master.tbot.platform.name + '/platform_controller/tension_gripper_tethers', 
+                            button=button, success_label=success_label, option_menu=option_menu, tension_value=True)
 
-        action_frame = self.create_label_frame(master = self, text = 'Actions')
-        action_frame.grid(row = 2, column = 0)
+        button = TkButton(master=service_frame, text='Untension Tethers')
+        button.grid(row=6, column=0, columnspan=2)
 
-        button = self.create_button(master = action_frame, text = 'Calibrate Tether Lengths', command = self.calibrate_tether_lengths_button_callback)
-        button.grid(row = 0, column = 0, columnspan = 2)
-        button = self.create_cancel_button(master = action_frame, command = self.cancel_button_callback)
-        button.grid(row = 1, column = 0, columnspan = 2)
-        label = self.create_label(master = action_frame, text = 'Status:')
-        label.grid(row = 2, column = 0)
-        self._status_label = self.create_action_status_label(master = action_frame)
-        self._status_label.grid(row = 2, column = 1)
+        TensionSrvInterface(master=self, srv_name=self.master.tbot.platform.name + '/platform_controller/tension_gripper_tethers', 
+                            button=button, success_label=success_label, option_menu=option_menu, tension_value=False)
 
-        self.create_timer(callback = self.timer_callback, timeout_ms = 100)
+        button = TkButton(master=service_frame, text='Calibrate ZED Pose')
+        button.grid(row=7, column=0, columnspan=2)
 
-    def timer_callback(self):
+        TriggerSrvInterface(master=self, srv_name=self.master.tbot.platform.name + '/platform_state_publisher/calibrate_zed_pose',
+                            button=button, success_label=success_label)
 
-        if not self._actual_pose_node.msg_queue.empty():
-            msg: PoseStamped = self._actual_pose_node.msg_queue.get()
-            self._actual_pose_label_frame.update_data(msg.pose)
-        if not self._target_pose_node.msg_queue.empty():
-            msg: PoseStamped = self._target_pose_node.msg_queue.get()
-            self._target_pose_label_frame.update_data(msg.pose)
-        if not self._joint_states_node.msg_queue.empty():
-            msg: Float64Array = self._joint_states_node.msg_queue.get()
-            self._joint_states_label.update_data(msg.data)
-        if not self._control_enabled_node.msg_queue.empty():
-            msg: Bool = self._control_enabled_node.msg_queue.get()
-            self._control_enabled_label.update_data(msg.data)
-        if not self._transform_source_node.msg_queue.empty():
-            msg: String = self._transform_source_node.msg_queue.get()
-            self._transform_source_label.update_data(msg.data)
-        if not self._tether_tension_node.msg_queue.empty():
-            msg: BoolArray = self._tether_tension_node.msg_queue.get()
-            self._tether_tension_label.update_data(msg.data)
-        if not self._stability_node.msg_queue.empty():
-            msg: Float64 = self._stability_node.msg_queue.get()
-            self._stability_label.update_data(msg.data)
-        if not self._tension_tethers_node.res_queue.empty():
-            res: Tension.Response = self._tension_tethers_node.res_queue.get()
-            self._success_label.update_data(res.success)
-        if not self._calibrate_zed_pose_node.res_queue.empty():
-            res: Trigger.Response = self._calibrate_zed_pose_node.res_queue.get()
-            self._success_label.update_data(res.success)
-        if not self._calibrate_tether_lengths_node.status_queue.empty():
-            self._status_label.update_data(self._calibrate_tether_lengths_node.status_queue.get())
-        
-    def enable_control_button_callback(self):
+        action_frame = TkLabelFrame(master=self, text='Actions')
+        action_frame.grid(row=2, column=0)
 
-        self._enable_control_node.req_queue.put(EmptyService.Request())
+        execute_button = TkButton(master=action_frame, text='Calibrate Tether Lengths')
+        execute_button.grid(row=0, column=0, columnspan=2)
+        cancel_button = TkCancelButton(master=action_frame)
+        cancel_button.grid(row=1, column=0, columnspan=2)
+        status_label = TkLabel(master=action_frame, text='Status:')
+        status_label.grid(row=2, column=0)
+        status_label = TkActionStatusLabel(master=action_frame)
+        status_label.grid(row=2, column=1)
 
-    def disable_control_button_callback(self):
-
-        self._disable_control_node.req_queue.put(EmptyService.Request())
-
-    def set_transform_source_button_callback(self):
-
-        request = SetString.Request()
-        request.data = self._set_transform_source_optionmenu.variable.get()
-
-        self._set_transform_source_node.req_queue.put(request)
-
-    def tension_tethers_button_callback(self):
-
-        self._success_label.update_data('None')
-
-        request = Tension.Request()
-        request.gripper_index = self._gripper_names.index(self._tension_tethers_optionmenu.variable.get())
-        request.value = True
-        self._tension_tethers_node.req_queue.put(request)
-
-    def untension_tethers_button_callback(self):
-
-        self._success_label.update_data('None')
-
-        request = Tension.Request()
-        request.gripper_index = self._gripper_names.index(self._tension_tethers_optionmenu.variable.get())
-        request.value = False
-        self._tension_tethers_node.req_queue.put(request)
-
-    def calibrate_zed_pose_button_callback(self):
-
-        self._success_label.update_data('None')
-
-        self._calibrate_zed_pose_node.req_queue.put(Trigger.Request())
-
-    def calibrate_tether_lengths_button_callback(self):
-
-        self._calibrate_tether_lengths_node.goal_queue.put(EmptyAction.Goal())
-
-    def cancel_button_callback(self):
-
-        self._calibrate_tether_lengths_node.cancel_event.set()
-
+        EmptyActionInterface(master=self, action_name=self.master.tbot.platform.name + '/platform_controller/calibrate_tether_lengths',
+                             execute_button=execute_button, cancel_button=cancel_button, status_label=status_label)
