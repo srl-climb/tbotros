@@ -30,6 +30,9 @@ class App(tk.Tk):
         # create node representing the gui
         self.node = Node('tetherbot_gui')
 
+        self.node.declare_parameter('desc_file', '/home/climb/ros2_ws/src/tbotros_description/tbotros_description/desc/tetherbot/tetherbot_light.pkl')
+        self.desc_file = self.node.get_parameter('desc_file').get_parameter_value().string_value
+
         # create menubar
         menubar = tk.Menu(self)
         self.config(menu=menubar)
@@ -40,9 +43,16 @@ class App(tk.Tk):
         # title
         self.title('Tetherbot UI 2.0')
 
+        # background image
+        image = tk.PhotoImage(file=os.path.join(get_package_share_directory('tetherbot_gui'), 'icons/srl_logo.png')).subsample(2)
+        label = tk.Label(image=image)
+        label.pack()
+        label.img = image
+
         # create file menu
         file_menu = tk.Menu(menubar)
         file_menu.add_command(label='Exit', command=self.destroy)
+        file_menu.add_command(label='Exit All', command=lambda: [self.destroy_subprocesses(), self.destroy()])
 
         # create window menu
         window_menu = tk.Menu(menubar)
@@ -64,23 +74,45 @@ class App(tk.Tk):
 
         # create tool menu
         tool_menu = tk.Menu(menubar)
-        tool_menu.add_command(label='Rviz', command=lambda: subprocess.run(['rviz2']))
-        tool_menu.add_command(label='RQT', command=lambda: subprocess.run(['rqt']))
-        tool_menu.add_command(label='RQT Graph', command=lambda: subprocess.run(['rqt_graph']))
-        tool_menu.add_command(label='SSH', command=lambda: subprocess.Popen(["gnome-terminal --title=srl-orin -- sh -c 'cd ~; ssh srl-orin@192.168.1.2; bash'"], shell=True))
+        tool_menu.add_command(label='Rviz', command=lambda:self.create_subprocess('rviz2 -d ' + os.path.join(get_package_share_directory('tetherbot_gui'), 'config/tbot.rviz')))
+        tool_menu.add_command(label='Rqt', command=lambda: self.create_subprocess('rqt'))
+        tool_menu.add_command(label='Rqt Graph', command=lambda: self.create_subprocess('rqt_graph'))
+
+        # create tool menu
+        jetson_menu = tk.Menu(menubar)
+        jetson_menu.add_command(label='Launch', command=lambda: self.create_subprocess("sh " + os.path.join(get_package_share_directory('tetherbot_gui'), 'bash/jetson_launch.sh')))
+        jetson_menu.add_command(label='Terminal', command=lambda: self.create_subprocess("sh " + os.path.join(get_package_share_directory('tetherbot_gui'), 'bash/jetson_terminal.sh')))
+        jetson_menu.add_command(label='Setup', command=lambda: self.create_subprocess("sh " + os.path.join(get_package_share_directory('tetherbot_gui'), 'bash/jetson_setup.sh')))
+        jetson_menu.add_command(label='Monitor', command=lambda: self.create_subprocess("sh " + os.path.join(get_package_share_directory('tetherbot_gui'), 'bash/jetson_monitor.sh')))
+        jetson_menu.add_command(label='Shutdown', command=lambda: self.create_subprocess("sh " + os.path.join(get_package_share_directory('tetherbot_gui'), 'bash/jetson_shutdown.sh')))
+        jetson_menu.add_command(label='Reboot', command=lambda: self.create_subprocess("sh " + os.path.join(get_package_share_directory('tetherbot_gui'), 'bash/jetson_reboot.sh')))
+
+        # create ground station menu
+        gs_menu = tk.Menu(menubar)
+        gs_menu.add_command(label='Launch', command=lambda: self.create_subprocess("sh " + os.path.join(get_package_share_directory('tetherbot_gui'), 'bash/gs_launch.sh')))
+
+        # create ros bag menu
+        bag_menu = tk.Menu(menubar)
+        bag_menu.add_command(label='Record', command=lambda: self.create_subprocess("sh " + os.path.join(get_package_share_directory('tetherbot_gui'), 'bash/bag_record_launch.sh')))
+        bag_menu.add_command(label='Play', command=lambda: self.create_subprocess("sh " + os.path.join(get_package_share_directory('tetherbot_gui'), 'bash/bag_play_launch.sh')))
 
         # add menus to menubar
         menubar.add_cascade(label='File', menu=file_menu)
         menubar.add_cascade(label='Window', menu=window_menu)
         menubar.add_cascade(label='Tools', menu=tool_menu)
+        menubar.add_cascade(label='Jetson', menu=jetson_menu)
+        menubar.add_cascade(label='Ground Station', menu=gs_menu)
+        menubar.add_cascade(label='ROS Bag', menu=bag_menu)
 
         # list to store all windows
         self.windows: list[Window] = []
 
+        # list to store all subprocesses
+        self.processes: list[subprocess.Popen] = []
+
         # load tetherbot object from config path
-        tbot_desc_file = os.path.join(get_package_share_directory('tbotros_description'), 'desc/tetherbot_light.pkl')
         try:
-            self.tbot: TbTetherbot = TbTetherbot.load(tbot_desc_file)
+            self.tbot: TbTetherbot = TbTetherbot.load(self.desc_file)
         except Exception as exc:
             self.get_logger().error('Failed loading tetherbot object: ' + str(exc))
 
@@ -132,6 +164,16 @@ class App(tk.Tk):
 
         return self.node.get_logger()
     
+    def create_subprocess(self, args: str):
+
+        self.processes.append(subprocess.Popen(args, shell=True, preexec_fn=os.setpgrp))
+
+    def destroy_subprocesses(self):
+
+        for process in reversed(self.processes):
+            os.killpg(process.pid, signal.SIGTERM)
+            self.processes.remove(process)
+    
     def destroy(self, *_):
         
         self.node.destroy_node()
@@ -158,7 +200,6 @@ class App(tk.Tk):
             while stop_event.is_set() == False:
                 executor.spin_once(timeout_sec=0.5)
         except rclpy.executors.ExternalShutdownException:
-            print('hi')
             pass
 
         executor.shutdown()

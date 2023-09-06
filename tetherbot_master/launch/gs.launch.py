@@ -12,7 +12,6 @@ from ament_index_python.packages import get_package_share_directory
 # https://github.com/ros-planning/navigation2/blob/main/nav2_bringup/launch/multi_tb3_simulation_launch.py
 
 commands_path = '/home/climb/ros2_ws/commands/commands.pkl'
-enable_gui = False
 enable_optitrack = True
 enable_rviz = False
 
@@ -71,14 +70,6 @@ def generate_launch_description():
         parameters = [{'commands_path': commands_path,
                        'config_file': tbot_desc_path}]
     ))
-
-    # user interface
-    if enable_gui:
-        executables.append(Node(
-            package = 'tetherbot_gui',
-            executable = 'tetherbot_gui',
-            on_exit = Shutdown()
-        ))
 
     # optitrack
     if enable_optitrack:

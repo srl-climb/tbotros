@@ -29,7 +29,7 @@ class ArmWindow(Window):
         label_frame = TkPoseLabelFrame(master = state_frame, text = 'Target Pose:')
         label_frame.grid(row = 1, column = 0, columnspan = 2)
 
-        PoseMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/arm_controller/target_pose', label_frame=label_frame)
+        PoseStampedMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/arm_controller/target_pose', label_frame=label_frame)
 
         label = TkLabel(master = state_frame, text = 'Joint States:')
         label.grid(row = 2, column = 0)
