@@ -71,7 +71,6 @@ class GripperControllerNode(Node):
             
             while True:
                 self._rate.sleep()
-                
                 # initialize
                 if state == 0:
                     self.get_logger().info('Open/close action [%s]: Start' %action_id)

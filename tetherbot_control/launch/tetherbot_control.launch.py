@@ -124,7 +124,7 @@ def generate_launch_description():
         executables.append(Node(
                 package = 'wireless_servo',
                 executable = 'wireless_servo',
-                parameters = [{'servo_name': 'wireless_servo' + str(i)}],
+                parameters = [{'servo_name': 'wireless_servo' + str(i+1)}],
                 namespace = tbot.platform.arm.name))
     
     # === CANOPEN AND MOTORS ===
