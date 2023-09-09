@@ -50,19 +50,19 @@ class ArmWindow(Window):
         label = TkBoolLabel(master = state_frame)
         label.grid(row = 4, column = 1)
 
-        Int8MsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/wireless_servo_peripheral/servo_closed', label=label)
+        Int8MsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/wireless_servo/closed', label=label)
 
         label = TkLabel(master = state_frame, text = 'Contact Switch:')
         label.grid(row = 5, column = 0)
-        contact_switch_label = TkBoolLabel(master = state_frame)
-        contact_switch_label.grid(row = 5, column = 1)
+        label = TkBoolLabel(master = state_frame)
+        label.grid(row = 5, column = 1)
 
-        BoolMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/wireless_servo_peripheral/limitswitch0', label=label)
+        BoolMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/wireless_servo/limitswitch0', label=label)
 
         label = TkLabel(master = state_frame, text = 'Contact Confirmed:')
         label.grid(row = 6, column = 0)
-        contact_confirmed_label = TkBoolLabel(master = state_frame)
-        contact_confirmed_label.grid(row = 6, column = 1)
+        label = TkBoolLabel(master = state_frame)
+        label.grid(row = 6, column = 1)
 
         BoolMsgInterface(master=self, msg_name=self.master.tbot.platform.arm.name + '/docking_controller/contact_confirmed', label=label)
 

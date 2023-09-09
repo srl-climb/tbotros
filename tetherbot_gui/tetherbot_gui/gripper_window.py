@@ -37,14 +37,14 @@ class GripperWindow(Window):
             label = TkBoolLabel(master=state_frame)
             label.grid(row=2, column=1)
 
-            Int8MsgInterface(master=self, msg_name=gripper.name + '/wireless_servo_peripheral/servo_closed', label=label)
+            Int8MsgInterface(master=self, msg_name=gripper.name + '/wireless_servo/closed', label=label)
             
             label = TkLabel(master=state_frame, text='Contactswitch:')
             label.grid(row=3, column=0)
             label = TkBoolLabel(master=state_frame)
             label.grid(row=3, column=1)
 
-            BoolMsgInterface(master=self, msg_name=gripper.name + '/wireless_servo_peripheral/limitswitch0', label=label)
+            BoolMsgInterface(master=self, msg_name=gripper.name + '/wireless_servo/limitswitch0', label=label)
             
             label = TkLabel(master=state_frame, text='Contact Confirmed:')
             label.grid(row=4, column=0)
@@ -58,7 +58,7 @@ class GripperWindow(Window):
             label = TkStringLabel(master=state_frame)
             label.grid(row=5, column=1)
 
-            StringMsgInterface(master=self, msg_name=gripper.name + '/gripper_state_publisher/set_transform_source', label=label)
+            StringMsgInterface(master=self, msg_name=gripper.name + '/gripper_state_publisher/transform_source', label=label)
             
             label = TkLabel(master=state_frame, text='Hold Name:')
             label.grid(row=6, column=0)
