@@ -20,8 +20,8 @@ class GripperControllerNode(Node):
         ActionServer(self, EmptyAction, self.get_name() + '/open', execute_callback = self.open_execute_callback, cancel_callback = self.cancel_callback)
         ActionServer(self, EmptyAction, self.get_name() + '/close', execute_callback = self.close_execute_callback, cancel_callback = self.cancel_callback)
 
-        self._servo_open_cli = ActionClient(self, EmptyAction, 'wireless_servo_peripheral/servo_open')
-        self._servo_close_cli = ActionClient(self, EmptyAction, 'wireless_servo_peripheral/servo_close')
+        self._servo_open_cli = ActionClient(self, EmptyAction, 'wireless_servo/open')
+        self._servo_close_cli = ActionClient(self, EmptyAction, 'wireless_servo/close')
         
         self.create_service(EmptyService, self.get_name() + '/confirm_contact', self.confirm_contact_srv_callback)
         self.create_subscription(Bool, self.get_name() + '/contactswitch', self.contactswitch_sub_callback, 1)

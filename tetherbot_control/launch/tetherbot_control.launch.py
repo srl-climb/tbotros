@@ -17,7 +17,7 @@ enable_tf = True
 enable_zed = False 
 enable_cameras = False
 enable_motors = True
-enable_servos = False
+enable_servos = True
 enable_arm = True
 enable_grippers = True
 enable_platform = True
@@ -112,34 +112,20 @@ def generate_launch_description():
             
     # === WIRELESS SERVOS === 
     if enable_servos:
-        # serial manager
-        executables.append(Node(
-            package = 'serial_manager',
-            executable = 'serial_manager'))
-
-        # wireless servo central
-        executables.append(Node(
-            package = 'wireless_servo',
-            executable = 'wireless_servo_central'))
-        
-        # wireless servo peripherals (gripper)
+        # wireless servos (gripper)
         for i in range(tbot.k):      
             executables.append(Node(
                 package = 'wireless_servo',
-                executable = 'wireless_servo_peripheral',
-                parameters = [{'arduino_local_name': 'wireless_servo' + str(i)}],
-                namespace = tbot.grippers[i].name,
-                remappings = [('/' + tbot.grippers[i].name + '/wireless_servo_central/arduino_peripherals_connected', '/wireless_servo_central/arduino_peripherals_connected'),
-                              ('/' + tbot.grippers[i].name +'/serial_manager/message', '/serial_manager/message')]))
-        
-        # wireless servo peripheral (arm)
+                executable = 'wireless_servo',
+                parameters = [{'servo_name': 'wireless_servo' + str(i)}],
+                namespace = tbot.grippers[i].name))
+            
+        # wireless servos (arm)
         executables.append(Node(
-            package = 'wireless_servo',
-            executable = 'wireless_servo_peripheral',
-            parameters = [{'arduino_local_name': 'wireless_servo' + str(i+1)}],
-            namespace = tbot.platform.arm.name,
-            remappings = [('/' + tbot.platform.arm.name + '/wireless_servo_central/arduino_peripherals_connected', '/wireless_servo_central/arduino_peripherals_connected'),
-                          ('/' + tbot.platform.arm.name +'/serial_manager/message', '/serial_manager/message')]))
+                package = 'wireless_servo',
+                executable = 'wireless_servo',
+                parameters = [{'servo_name': 'wireless_servo' + str(i)}],
+                namespace = tbot.platform.arm.name))
     
     # === CANOPEN AND MOTORS ===
     if enable_motors:
@@ -171,7 +157,7 @@ def generate_launch_description():
                 package = 'tetherbot_control',
                 executable = 'tetherbot_control_gripper_controller',
                 namespace = tbot.grippers[i].name,
-                remappings = [('/' + tbot.grippers[i].name + '/gripper_controller/contactswitch', '/' + tbot.grippers[i].name + '/wireless_servo_peripheral/limitswitch0')]))
+                remappings = [('/' + tbot.grippers[i].name + '/gripper_controller/contactswitch', '/' + tbot.grippers[i].name + '/wireless_servo/limitswitch0')]))
         
     # === ARM ===
     if enable_arm:
@@ -218,7 +204,7 @@ def generate_launch_description():
             executable = 'tetherbot_control_gripper_controller',
             name = 'docking_controller',
             namespace = tbot.platform.arm.name,
-            remappings = [('/' + tbot.platform.arm.name + '/docking_controller/contactswitch', '/' + tbot.platform.arm.name + '/wireless_servo_peripheral/limitswitch0')]))
+            remappings = [('/' + tbot.platform.arm.name + '/docking_controller/contactswitch', '/' + tbot.platform.arm.name + '/wireless_servo/limitswitch0')]))
         
     # === PLATFORM ===
     if enable_platform:
