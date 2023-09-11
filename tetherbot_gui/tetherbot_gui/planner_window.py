@@ -38,7 +38,7 @@ class PlannerWindow(Window):
         label.configure(width=25)
         label.bind('<Configure>', lambda e: label.config(wraplength=label.winfo_width()-10))
 
-        StringMsgInterface(master=self, msg_name='planner/commands_path', label=label)
+        StringMsgInterface(master=self, msg_name='planner/commands_file', label=label)
 
         label = TkLabel(master=state_frame, text='Commands Saved:')
         label.grid(row=2, column=0)
@@ -67,7 +67,7 @@ class PlannerWindow(Window):
         button = TkButton(master=service_frame, text='Set Commands Path')
         button.grid(row=3, column=0, columnspan=2)
 
-        SetStringSrvInterface(master=self, srv_name='planner/set_commands_path', entry=entry, button=button)
+        SetStringSrvInterface(master=self, srv_name='planner/set_commands_file', entry=entry, button=button)
 
         button = TkButton(master= service_frame, text='Save Commands')
         button.grid(row=4, column=0, columnspan=2)

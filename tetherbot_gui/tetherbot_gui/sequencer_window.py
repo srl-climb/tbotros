@@ -33,7 +33,7 @@ class SequencerWindow(Window):
         label.configure(width = 25)
         label.bind('<Configure>', lambda e: label.config(wraplength=label.winfo_width()-10))
 
-        StringMsgInterface(master=self, label=label, msg_name='sequencer/commands_path')
+        StringMsgInterface(master=self, label=label, msg_name='sequencer/commands_file')
 
         label = TkLabel(master=state_frame, text='Commands loaded:')
         label.grid(row=2,column=0)
@@ -52,7 +52,7 @@ class SequencerWindow(Window):
         button = TkButton(master= service_frame, text = 'Set Commands Path')
         button.grid(row = 1, column = 0, columnspan = 2)
 
-        SetStringSrvInterface(master=self, entry=entry, button=button, srv_name='sequencer/set_commands_path')
+        SetStringSrvInterface(master=self, entry=entry, button=button, srv_name='sequencer/set_commands_file')
 
         button = TkButton(master = service_frame, text = 'Load Commands')
         button.grid(row = 2, column = 0, columnspan = 2)

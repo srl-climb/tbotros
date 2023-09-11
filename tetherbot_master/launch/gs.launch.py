@@ -11,7 +11,7 @@ from ament_index_python.packages import get_package_share_directory
 # https://answers.ros.org/question/374926/ros2-how-to-launch-rviz2-with-config-file/
 # https://github.com/ros-planning/navigation2/blob/main/nav2_bringup/launch/multi_tb3_simulation_launch.py
 
-commands_path = '/home/climb/ros2_ws/commands/commands.pkl'
+commands_file = '/home/climb/ros2_ws/commands/commands.pkl'
 enable_optitrack = True
 enable_rviz = False
 
@@ -50,16 +50,16 @@ def generate_launch_description():
 
     executables = []
 
-    planner_config_path = os.path.join(get_package_share_directory('tbotros_config'), 'config/planner.yaml')
-    tbot_desc_path = os.path.join(get_package_share_directory('tbotros_description'), 'desc/tetherbot.pkl')
+    planner_config_file = os.path.join(get_package_share_directory('tbotros_config'), 'config/planner.yaml')
+    tbot_desc_file = os.path.join(get_package_share_directory('tbotros_description'), 'desc/tetherbot.pkl')
 
     # path planner
     executables.append(Node(
         package = 'tetherbot_planner',
         executable = 'tetherbot_planner',
-        parameters = [{'commands_path': commands_path,
-                       'config_file': tbot_desc_path,
-                       'planner_config_path': planner_config_path}],
+        parameters = [{'commands_file': commands_file,
+                       'desc_file': tbot_desc_file,
+                       'config_path': planner_config_file}],
         output = 'both'
     ))
 
@@ -67,8 +67,8 @@ def generate_launch_description():
     executables.append(Node(
         package = 'tetherbot_sequencer',
         executable = 'tetherbot_sequencer',
-        parameters = [{'commands_path': commands_path,
-                       'config_file': tbot_desc_path}]
+        parameters = [{'commands_file': commands_file,
+                       'desc_file': tbot_desc_file}]
     ))
 
     # optitrack

@@ -31,16 +31,16 @@ class PlannerNode(Node):
 
         super().__init__(node_name = 'planner')
 
-        self.declare_parameter('config_file', '/home/climb/ros2_ws/src/tbotros_description/tbotros_description/desc/tetherbot/tetherbot_light.pkl')
+        self.declare_parameter('desc_file', '/home/climb/ros2_ws/src/tbotros_description/tbotros_description/desc/tetherbot/tetherbot_light.pkl')
+        self._desc_file = self.get_parameter('desc_file').get_parameter_value().string_value
+
+        self.declare_parameter('config_file', '/home/climb/ros2_ws/src/tbotros_config/tbotros_config/config/planner.yaml')
         self._config_file = self.get_parameter('config_file').get_parameter_value().string_value
 
-        self.declare_parameter('planner_config_path', '/home/climb/ros2_ws/src/tbotros_config/tbotros_config/config/planner.yaml')
-        self._planner_config_path = self.get_parameter('planner_config_path').get_parameter_value().string_value
-
-        self.declare_parameter('commands_path', '/home/srl-orin/ros2_ws/command/command.pkl')
-        self._commands_path = self.get_parameter('commands_path').get_parameter_value().string_value
+        self.declare_parameter('commands_file', '/home/srl-orin/ros2_ws/command/command.pkl')
+        self._commands_file = self.get_parameter('commands_file').get_parameter_value().string_value
         
-        self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
+        self._tbot: TbTetherbot = TbTetherbot.load(self._desc_file)
 
         # intermediary objects
         self._tbot_platform_arm_qs = self._tbot.platform.arm.qs
@@ -67,12 +67,12 @@ class PlannerNode(Node):
         # services
         self.create_service(Empty, self.get_name() + '/display_state', self.display_state_srv_callback)
         self.create_service(Empty, self.get_name() + '/display_commands', self.display_commands_srv_callback)
-        self.create_service(SetString, self.get_name() + '/set_commands_path', self.set_commands_path_srv_callback)
+        self.create_service(SetString, self.get_name() + '/set_commands_file', self.set_commands_file_srv_callback)
         self.create_service(Trigger, self.get_name() + '/save_commands', self.save_commands_srv_callback)
         # NOTE: Put set_commands and save_commands in same callback group to avoid changing the path while saving commands
         # publishers
         self._busy_pub = self.create_publisher(Bool, self.get_name() + '/busy',1)
-        self._commands_path_pub = self.create_publisher(String, self.get_name() + '/commands_path',1)
+        self._commands_file_pub = self.create_publisher(String, self.get_name() + '/commands_file',1)
         self._commands_saved_pub = self.create_publisher(Bool, self.get_name() + '/commands_saved',1)
         # timers
         self.create_timer(1, self.timer_callback)
@@ -94,8 +94,8 @@ class PlannerNode(Node):
         self._busy_pub.publish(msg)
 
         msg = String()
-        msg.data = self._commands_path
-        self._commands_path_pub.publish(msg)
+        msg.data = self._commands_file
+        self._commands_file_pub.publish(msg)
 
         msg = Bool()
         msg.data = self._commands_saved
@@ -130,10 +130,10 @@ class PlannerNode(Node):
 
         self._tbot_grippers_hold_name[i] = msg.data
 
-    def set_commands_path_srv_callback(self, request: SetString.Request, response: SetString.Response) -> SetString.Response:
+    def set_commands_file_srv_callback(self, request: SetString.Request, response: SetString.Response) -> SetString.Response:
 
         with self._commands_lock:
-            self._commands_path = request.data
+            self._commands_file = request.data
             self._commands_saved = False
 
         return response
@@ -142,14 +142,14 @@ class PlannerNode(Node):
         
         with self._commands_lock:
             try:
-                self._commands.save(self._commands_path, overwrite = True)
+                self._commands.save(self._commands_file, overwrite = True)
             except Exception as exc:
                 response.success = False
                 self.get_logger().error('Failed saving commands: ' + str(exc))
             else:
                 self._commands_saved = True
                 response.success = True
-                self.get_logger().info('Saved commands: ' + self._commands_path)
+                self.get_logger().info('Saved commands: ' + self._commands_file)
 
         return response
 
@@ -313,13 +313,13 @@ class PlannerNode(Node):
 
     def load_planner_config(self):
 
-        with open(self._planner_config_path, "r") as stream:
+        with open(self._config_file, "r") as stream:
             try: 
-                self._simulation_dt, self._platform2pose, self._platform2configuration, self._arm2pose, self._local_planner, self._global_planner = yaml2planner(self._planner_config_path)
+                self._simulation_dt, self._platform2pose, self._platform2configuration, self._arm2pose, self._local_planner, self._global_planner = yaml2planner(self._config_file)
             except Exception as exc:
-                self.get_logger().error("Failed loading planner configuration file '" + self._planner_config_path + ": '" + str(exc))
+                self.get_logger().error("Failed loading planner configuration file '" + self._config_file + ": '" + str(exc))
             else:
-                self.get_logger().info("Loaded planner configuration file '" + self._planner_config_path + "'")
+                self.get_logger().info("Loaded planner configuration file '" + self._config_file + "'")
         
     def pose2mat(self, pose: Pose) -> np.ndarray:
 
