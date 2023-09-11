@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from .tkinter_objects import TkLabelFrame, TkLabel, TkBoolLabel, TkStringLabel, TkButton, TkEntry, TkCancelButton, TkActionStatusLabel
-from .interfaces import BoolMsgInterface, StringMsgInterface, SetStringSrvInterface, TriggerSrvInterface, ExecuteSequenceActionInterface
+from .interfaces import BoolMsgInterface, StringMsgInterface, SetStringSrvInterface, TriggerSrvInterface, ExecuteSequenceActionInterface, EmptySrvInterface
 from .window import Window
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ class SequencerWindow(Window):
         label.grid(row=1, column=0)
         label = TkStringLabel(master=state_frame)
         label.grid(row=1, column=1)
-        label.configure(width = 25)
+        label.configure(width=25)
         label.bind('<Configure>', lambda e: label.config(wraplength=label.winfo_width()-10))
 
         StringMsgInterface(master=self, label=label, msg_name='sequencer/commands_file')
@@ -41,49 +41,70 @@ class SequencerWindow(Window):
         label.grid(row=2,column=1)
 
         BoolMsgInterface(master=self, label=label, msg_name='sequencer/commands_loaded')
-        
-        service_frame = TkLabelFrame(master = self, text = 'Services')
-        service_frame.grid(row = 1, column = 0)
 
-        label = TkLabel(master = service_frame, text = 'File Path:')
-        label.grid(row = 0, column = 0)
-        entry = TkEntry(master = service_frame)
-        entry.grid(row = 0, column = 1)
-        button = TkButton(master= service_frame, text = 'Set Commands File')
-        button.grid(row = 1, column = 0, columnspan = 2)
+        label = TkLabel(master=state_frame, text='Auto:')
+        label.grid(row=3,column=0)
+        label = TkBoolLabel(master=state_frame)
+        label.grid(row=3,column=1)
+
+        BoolMsgInterface(master=self, label=label, msg_name='sequencer/auto')
+        
+        service_frame = TkLabelFrame(master=self, text='Services')
+        service_frame.grid(row=1, column=0)
+
+        label = TkLabel(master=service_frame, text='File Path:')
+        label.grid(row=0, column=0)
+        entry = TkEntry(master=service_frame)
+        entry.grid(row=0, column=1)
+        button = TkButton(master=service_frame, text='Set Commands File')
+        button.grid(row=1, column=0, columnspan=2)
 
         SetStringSrvInterface(master=self, entry=entry, button=button, srv_name='sequencer/set_commands_file')
 
-        button = TkButton(master = service_frame, text = 'Load Commands')
-        button.grid(row = 2, column = 0, columnspan = 2)
-        label = TkLabel(master = service_frame, text = 'Success: ')
-        label.grid(row = 3, column = 0)
-        label = TkBoolLabel(master = service_frame)
-        label.grid(row = 3, column = 1)
+        button = TkButton(master=service_frame, text='Load Commands')
+        button.grid(row=2, column=0, columnspan=2)
+        label = TkLabel(master=service_frame, text='Success: ')
+        label.grid(row=3, column=0)
+        label = TkBoolLabel(master=service_frame)
+        label.grid(row=3, column=1)
 
         TriggerSrvInterface(master=self, success_label=label, button=button, srv_name='sequencer/load_commands')
 
-        action_frame = TkLabelFrame(master = self, text = 'Actions')
-        action_frame.grid(row = 2, column = 0)
+        button = TkButton(master=service_frame, text='Enable Auto')
+        button.grid(row=4, column=0, columnspan=2)
 
-        execute_button = TkButton(master = action_frame, text = 'Execute Commands')
-        execute_button.grid(row = 0, column = 0, columnspan = 2)
-        cancel_button = TkCancelButton(master = action_frame)
-        cancel_button.grid(row = 1, column = 0, columnspan = 2)
-        label = TkLabel(master = action_frame, text = 'Progress: ')
-        label.grid(row = 2, column = 0)
-        progress_label = TkStringLabel(master = action_frame)
-        progress_label.grid(row = 2, column = 1)
-        label = TkLabel(master = action_frame, text = 'Message: ')
-        label.grid(row = 3, column = 0)
-        message_label = TkStringLabel(master = action_frame)
-        message_label.grid(row = 3, column = 1)
-        label = TkLabel(master = action_frame, text = 'Status:')
-        label.grid(row = 4, column = 0)
-        status_label = TkActionStatusLabel(master = action_frame)
-        status_label.grid(row = 4, column = 1)
+        EmptySrvInterface(master=self, srv_name='sequencer/enable_auto', button=button)
+
+        button = TkButton(master=service_frame, text='Disable Auto')
+        button.grid(row=5, column=0, columnspan=2)
+
+        EmptySrvInterface(master=self, srv_name='sequencer/disable_auto', button=button)
+
+        action_frame = TkLabelFrame(master=self, text='Actions')
+        action_frame.grid(row=2, column=0)
+
+        execute_button = TkButton(master=action_frame, text='Execute Commands')
+        execute_button.grid(row=0, column=0, columnspan=2)
+        next_button = TkButton(master=action_frame, text='Next')
+        next_button.grid(row=1, column=0, columnspan=2)
+        cancel_button = TkCancelButton(master=action_frame)
+        cancel_button.grid(row=2, column=0, columnspan=2)
+        label = TkLabel(master=action_frame, text='Progress:')
+        label.grid(row=3, column=0)
+        progress_label = TkStringLabel(master=action_frame)
+        progress_label.grid(row=3, column=1)
+        label = TkLabel(master=action_frame, text='Message:')
+        label.grid(row=4, column=0)
+        message_label = TkStringLabel(master=action_frame)
+        message_label.configure(height=3)
+        message_label.bind('<Configure>', lambda e: message_label.config(wraplength=message_label.winfo_width()-10))
+        message_label.grid(row=4, column=1)
+        label = TkLabel(master=action_frame, text='Status:', width=10)
+        label.grid(row=5, column=0)
+        status_label = TkActionStatusLabel(master=action_frame)
+        status_label.grid(row=5, column=1)
 
         ExecuteSequenceActionInterface(master=self, execute_button=execute_button, cancel_button=cancel_button, 
                                        status_label=status_label, progress_label=progress_label, message_label=message_label, 
                                        action_name='sequencer/execute_sequence')
-
+        EmptySrvInterface(master=self, srv_name='sequencer/next', button=next_button)

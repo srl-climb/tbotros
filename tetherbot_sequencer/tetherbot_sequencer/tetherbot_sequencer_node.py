@@ -8,12 +8,13 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.action import ActionClient, ActionServer
 from rclpy.action.server import ServerGoalHandle, GoalResponse, CancelResponse
 from rclpy.client import Client
-from custom_actions.action import MoveTetherbot, Empty, ExecuteSequence
+from custom_actions.action import MoveTetherbot, Empty as EmptyAction, ExecuteSequence
 from custom_srvs.srv import SetString, Tension
 from std_msgs.msg import Bool, String
+from std_srvs.srv import Empty as EmptyService
 from std_srvs.srv import Trigger
 from tbotlib import TbTetherbot, CommandMoveArm, CommandMovePlatform, CommandPickGripper, CommandPlaceGripper, CommandList
-from .handler import TbHandler, TbEmptyActionHandler, TbMoveActionHandler, TbSetStringServiceHandler, TbTensionServiceHandler, TbDelayHandler
+from .handler import TbHandler, TbEmptyActionHandler, TbMoveActionHandler, TbSetStringServiceHandler, TbTensionServiceHandler, TbDelayHandler, TbEmptyServiceHandler
 
 class SequencerNode(Node):
 
@@ -34,6 +35,8 @@ class SequencerNode(Node):
         self._rate = self.create_rate(10)
         self._busy_lock = Lock()
         self._busy = False
+        self._auto = False
+        self._next = False
         self._commands = CommandList()
         self._commands_lock = Lock()
 
@@ -50,21 +53,33 @@ class SequencerNode(Node):
         self._gripper_set_hold_clients: list[Client] = []
         self._gripper_set_transform_source_clients: list[Client] = []
         for gripper in self._tbot.grippers:
-            self._gripper_close_clients.append(ActionClient(self, Empty, gripper.name + '/gripper_controller/close'))
-            self._gripper_open_clients.append(ActionClient(self, Empty, gripper.name + '/gripper_controller/open'))
+            self._gripper_close_clients.append(ActionClient(self, EmptyAction, gripper.name + '/gripper_controller/close'))
+            self._gripper_open_clients.append(ActionClient(self, EmptyAction, gripper.name + '/gripper_controller/open'))
             self._gripper_set_hold_clients.append(self.create_client(SetString, gripper.name + '/gripper_state_publisher/set_hold'))
             self._gripper_set_transform_source_clients.append(self.create_client(SetString, gripper.name + '/gripper_state_publisher/set_transform_source'))
-        self._docking_close_client = ActionClient(self, Empty, self._tbot.platform.arm.name + '/docking_controller/close')
-        self._docking_open_client = ActionClient(self, Empty, self._tbot.platform.arm.name + '/docking_controller/open')
+        self._docking_close_client = ActionClient(self, EmptyAction, self._tbot.platform.arm.name + '/docking_controller/close')
+        self._docking_open_client = ActionClient(self, EmptyAction, self._tbot.platform.arm.name + '/docking_controller/open')
+        
         # clients
         self._tension_tethers_client = self.create_client(Tension, self._tbot.platform.name + '/platform_controller/tension_gripper_tethers')
+        self._enable_arm_control_client = self.create_client(Tension, self._tbot.platform.arm.name + '/arm_controller/enable_control')
+        self._disable_arm_control_client = self.create_client(Tension, self._tbot.platform.arm.name + '/arm_controller/disable_control')
+        self._enable_platform_control_client = self.create_client(Tension, self._tbot.platform.name + '/platform_controller/enable_control')
+        self._disable_platform_control_client = self.create_client(Tension, self._tbot.platform.name + '/platform_controller/disable_control')
+
         # services
         self.create_service(SetString, self.get_name() + '/set_commands_file', self.set_commands_file_callback)
         self.create_service(Trigger, self.get_name() + '/load_commands', self.load_commands_callback)
+        self.create_service(EmptyService, self.get_name() + '/enable_auto', self.enable_auto_callback)
+        self.create_service(EmptyService, self.get_name() + '/disable_auto', self.disable_auto_callback)
+        self.create_service(EmptyService, self.get_name() + '/next', self.next_callback)
+        
         # publishers
-        self._busy_pub = self.create_publisher(Bool, self.get_name() + '/busy',1)
-        self._commands_file_pub = self.create_publisher(String, self.get_name() + '/commands_file',1)
-        self._commands_loaded_pub = self.create_publisher(Bool, self.get_name() + '/commands_loaded',1)
+        self._busy_pub = self.create_publisher(Bool, self.get_name() + '/busy', 1)
+        self._auto_pub = self.create_publisher(Bool, self.get_name() + '/auto', 1)
+        self._commands_file_pub = self.create_publisher(String, self.get_name() + '/commands_file', 1)
+        self._commands_loaded_pub = self.create_publisher(Bool, self.get_name() + '/commands_loaded', 1)
+        
         # timers
         self.create_timer(1, self.timer_callback)
 
@@ -81,6 +96,10 @@ class SequencerNode(Node):
         msg = Bool()
         msg.data = len(self._commands) > 0
         self._commands_loaded_pub.publish(msg)
+
+        msg = Bool()
+        msg.data = self._auto
+        self._auto_pub.publish(msg)
 
     def set_commands_file_callback(self, request: SetString.Request, response: SetString.Response) -> SetString.Response:
 
@@ -103,7 +122,25 @@ class SequencerNode(Node):
                 self.get_logger().info('Loaded commands: ' + self._commands_file)
 
         return response
+    
+    def enable_auto_callback(self, request: EmptyService.Request, response: EmptyService.Response) -> EmptyService.Response:
 
+        self._auto = True
+
+        return response
+    
+    def disable_auto_callback(self, request: EmptyService.Request, response: EmptyService.Response) -> EmptyService.Response:
+
+        self._auto = False
+
+        return response
+    
+    def next_callback(self, request: EmptyService.Request, response: EmptyService.Response) -> EmptyService.Response:
+
+        self._next = True
+
+        return response
+    
     def execute_sequence_execute_callback(self, goal_handle: ServerGoalHandle):
 
         state = 0
@@ -117,26 +154,29 @@ class SequencerNode(Node):
                 feedback.length = len(handlers)
                 if handlers:
                     feedback.message = 'Start'
-                    self.get_logger().info('Execute sequence: ' + feedback.message)      
+                    self.get_logger().info('Execute sequence: ' + feedback.message)    
+                    self._next = False  
                     state = 1
                 else:
                     goal_handle.abort()
                     feedback.message = 'Aborted, loaded sequence empty'
                     self.get_logger().error('Execute sequence: ' + feedback.message)
                     state = 99
-            # start new action
+            # start new action if auto or next is TRUE
             elif state == 1:
-                if handlers:
-                    current_handler = handlers.pop(0)
-                    feedback.message = 'Executing ' + current_handler.info()
-                    self.get_logger().info('Execute sequence: ' + feedback.message)
-                    state = 2
-                else:
+                if not handlers:
                     current_handler = None
                     goal_handle.succeed()
                     feedback.message = 'Succeeded'
                     self.get_logger().info('Execute sequence: ' + feedback.message)
                     state = 99
+                elif handlers and (self._auto or self._next):
+                    current_handler = handlers.pop(0)
+                    feedback.message = 'Executing ' + current_handler.info()
+                    self.get_logger().info('Execute sequence: ' + feedback.message)
+                    state = 2
+                else:
+                    state = 1
             # execute handler
             elif state == 2:
                 done, status = current_handler.execute()
@@ -144,6 +184,7 @@ class SequencerNode(Node):
                     if status == TbHandler.SUCCEEDED:
                         feedback.message = current_handler.info().capitalize() + ' succeeded'
                         self.get_logger().info('Execute sequence: ' + feedback.message)
+                        self._next = False
                         state = 1
                     elif status == TbHandler.CANCELED:
                         goal_handle.abort()
@@ -209,16 +250,24 @@ class SequencerNode(Node):
                 for command in commands:
                     # move platform
                     if type(command) is CommandMovePlatform:
+                        handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
                         handlers.append(TbMoveActionHandler(self._platform_move_client, command._targetposes))
+                        handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
                         handlers.append(TbDelayHandler(3))
                     # move arm
                     elif type(command) is CommandMoveArm:
+                        handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
+                        handlers.append(TbEmptyServiceHandler(self._enable_arm_control_client))
                         handlers.append(TbMoveActionHandler(self._arm_move_client, command._targetposes))
+                        handlers.append(TbEmptyServiceHandler(self._disable_arm_control_client))
+                        handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
                         handlers.append(TbDelayHandler(3))
                     # pick gripper
                     elif type(command) is CommandPickGripper:
+                        handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
                         handlers.append(TbTensionServiceHandler(self._tension_tethers_client, command._grip_idx, 0))
                         handlers.append(TbDelayHandler(3))
+                        handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
                         handlers.append(TbEmptyActionHandler(self._docking_close_client))
                         handlers.append(TbEmptyActionHandler(self._gripper_open_clients[command._grip_idx])) 
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_transform_source_clients[command._grip_idx], 'arm'))  
@@ -229,7 +278,10 @@ class SequencerNode(Node):
                         handlers.append(TbEmptyActionHandler(self._docking_open_client))
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_hold_clients[command._grip_idx], str(command._hold_idx)))
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_transform_source_clients[command._grip_idx], self._gripper_transform_source))  
+                        handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
                         handlers.append(TbTensionServiceHandler(self._tension_tethers_client, command._grip_idx, 1))
+                        handlers.append(TbDelayHandler(3))
+                        handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
                         handlers.append(TbDelayHandler(3))
                     else:
                         pass

@@ -5,6 +5,7 @@ from rclpy.client import Client
 from rclpy.action import ActionClient
 from custom_actions.action import Empty as EmptyAction, MoveTetherbot
 from custom_srvs.srv import SetString, Tension
+from std_srvs.srv import Empty as EmptyService
 from abc import ABC, abstractmethod
 from tbotlib import TransformMatrix
 from typing import TypeVar, Generic
@@ -140,6 +141,17 @@ class TbServiceHandler(TbHandler, Generic[ReqType, ResType]):
         return 'service ' + self._client.srv_name
 
 
+class TbEmptyServiceHandler(TbServiceHandler[EmptyService.Request, EmptyService.Response]):
+
+    def get_request(self) -> EmptyService.Request:
+
+        return EmptyService.Request()
+    
+    def eval_response(self, _) -> int:
+
+        return self.SUCCEEDED
+    
+
 class TbSetStringServiceHandler(TbServiceHandler[SetString.Request, SetString.Response]):
 
     def __init__(self, client: Client, data: str):
@@ -155,7 +167,7 @@ class TbSetStringServiceHandler(TbServiceHandler[SetString.Request, SetString.Re
 
         return request
     
-    def eval_response(self, response: SetString.Response) -> int:
+    def eval_response(self, _) -> int:
 
         return self.SUCCEEDED
 

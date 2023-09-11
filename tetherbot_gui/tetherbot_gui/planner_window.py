@@ -158,7 +158,7 @@ class PlannerWindow(Window):
         feedback_label.grid(row=2,column=1)
         feedback_label.configure(width=25, height=6)
         feedback_label.bind('<Configure>', lambda e: feedback_label.config(wraplength=feedback_label.winfo_width()-10))
-        label = TkLabel(master=frame, text='Status:')
+        label = TkLabel(master=frame, text='Status:', width=10)
         label.grid(row=3, column=0)
         status_label = TkActionStatusLabel(master=frame)
         status_label.grid(row=3, column=1) 
