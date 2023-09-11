@@ -326,6 +326,10 @@ class SrvInterface(ROSInterface, Generic[SrvType, ReqType, ResType]):
 
         pass
 
+    def reset_labels(self):
+
+        pass
+
     def button_callback(self):
 
         with self.lock:
@@ -343,7 +347,7 @@ class SrvInterface(ROSInterface, Generic[SrvType, ReqType, ResType]):
         while True:
             # create client
             if state == 0:
-                self.enqueue_response(None)
+                self.reset_labels()
                 start_time = self.master.node.get_clock().now().seconds_nanoseconds()[0]
                 cli = self.master.node.create_client(self.srv_type, self.srv_name)
                 state = 1
@@ -407,16 +411,17 @@ class TriggerSrvInterface(SrvInterface[Trigger, Trigger.Request, Trigger.Respons
         
         return Trigger.Request()
     
+    def reset_labels(self):
+        
+        self.queue.put(self.success_label, None)
+        if self.message_label is not None:
+            self.queue.put(self.message_label, '')
+    
     def enqueue_response(self, response: Trigger.Response) -> None:
         
-        if response is not None:
-            self.queue.put(self.success_label, response.success)
-            if self.message_label is not None:
-                self.queue.put(self.message_label, response.message)
-        else:
-            self.queue.put(self.success_label, None)
-            if self.message_label is not None:
-                self.queue.put(self.message_label, '')
+        self.queue.put(self.success_label, response.success)
+        if self.message_label is not None:
+            self.queue.put(self.message_label, response.message)
 
 
 class SetStringSrvInterface(SrvInterface[SetString, SetString.Request, SetString.Response]):
@@ -448,6 +453,10 @@ class SerialSendSrvInterface(SrvInterface[SerialSend, SerialSend.Request, Serial
 
         request = SerialSend.Request()
         request.msg = self.entry.get_data()
+
+    def reset_labels(self):
+        
+        self.queue.put(self.success_label, None)
 
     def enqueue_response(self, response: SerialSend.Response) -> None:
         
@@ -498,7 +507,11 @@ class ActionInterface(ROSInterface, Generic[ActionType, GoalType, ResultType, Fe
 
     def get_goal(self) -> GoalType:
 
-        return None
+        pass
+    
+    def reset_labels(self) -> None:
+
+        pass
     
     def enqueue_result(self, result: ResultType) -> None:
 
@@ -538,7 +551,7 @@ class ActionInterface(ROSInterface, Generic[ActionType, GoalType, ResultType, Fe
         while True:
             # create client
             if state == 0:
-                self.enqueue_result(None)
+                self.reset_labels()
                 start_time = self.master.node.get_clock().now().seconds_nanoseconds()[0]
                 cli = TkSafeActionClient(self.master.node, self.action_type, self.action_name)
                 goal_handle: ClientGoalHandle = None
@@ -623,19 +636,26 @@ class EmptyActionInterface(ActionInterface[EmptyAction, EmptyAction.Goal, EmptyA
 
 class ExecuteSequenceActionInterface(ActionInterface[ExecuteSequence, ExecuteSequence.Goal, ExecuteSequence.Result, ExecuteSequence.Feedback]):
 
-    def __init__(self, feedback_label: TkStringLabel = None, **kwargs):
+    def __init__(self, progress_label: TkStringLabel = None, message_label: TkStringLabel = None, **kwargs):
         
         super().__init__(action_type=ExecuteSequence, **kwargs)
 
-        self.feedback_label = feedback_label
+        self.progress_label = progress_label
+        self.message_label = message_label
 
     def get_goal(self) -> ExecuteSequence.Goal:
         
         return ExecuteSequence.Goal()
     
+    def reset_labels(self) -> None:
+        
+        self.queue.put(self.progress_label, '')
+        self.queue.put(self.message_label, '')
+    
     def enqueue_feedback(self, feedback: ExecuteSequence.Feedback) -> None:
         
-        self.queue.put(self.feedback_label, str(feedback.current) + ' of ' + str(feedback.length))
+        self.queue.put(self.progress_label, str(feedback.current) + ' of ' + str(feedback.length))
+        self.queue.put(self.message_label, feedback.message)
 
 
 class MoveMotorActionInterface(ActionInterface[MoveMotor, MoveMotor.Goal, MoveMotor.Result, MoveMotor.Feedback]):
@@ -741,6 +761,10 @@ class PlanTetherbotActionInterface(ActionInterface[PlanTetherbot, PlanTetherbot.
             goal.mode = 6
             goal.goal_configuration = [menu.get_index() for menu in self.global_hold_menus]
         return goal
+    
+    def reset_labels(self) -> None:
+        
+        self.queue.put(self.feedback_label, '')
 
     def enqueue_feedback(self, feedback: PlanTetherbot.Feedback) -> None:
 

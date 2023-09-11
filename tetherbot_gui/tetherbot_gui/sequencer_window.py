@@ -26,7 +26,7 @@ class SequencerWindow(Window):
 
         BoolMsgInterface(master=self, label=label, msg_name='sequencer/busy')
 
-        label = TkLabel(master=state_frame, text='Commands Path:')
+        label = TkLabel(master=state_frame, text='Commands File:')
         label.grid(row=1, column=0)
         label = TkStringLabel(master=state_frame)
         label.grid(row=1, column=1)
@@ -49,7 +49,7 @@ class SequencerWindow(Window):
         label.grid(row = 0, column = 0)
         entry = TkEntry(master = service_frame)
         entry.grid(row = 0, column = 1)
-        button = TkButton(master= service_frame, text = 'Set Commands Path')
+        button = TkButton(master= service_frame, text = 'Set Commands File')
         button.grid(row = 1, column = 0, columnspan = 2)
 
         SetStringSrvInterface(master=self, entry=entry, button=button, srv_name='sequencer/set_commands_file')
@@ -72,14 +72,18 @@ class SequencerWindow(Window):
         cancel_button.grid(row = 1, column = 0, columnspan = 2)
         label = TkLabel(master = action_frame, text = 'Progress: ')
         label.grid(row = 2, column = 0)
-        feedback_label = TkStringLabel(master = action_frame)
-        feedback_label.grid(row = 2, column = 1)
-        label = TkLabel(master = action_frame, text = 'Status:')
+        progress_label = TkStringLabel(master = action_frame)
+        progress_label.grid(row = 2, column = 1)
+        label = TkLabel(master = action_frame, text = 'Message: ')
         label.grid(row = 3, column = 0)
+        message_label = TkStringLabel(master = action_frame)
+        message_label.grid(row = 3, column = 1)
+        label = TkLabel(master = action_frame, text = 'Status:')
+        label.grid(row = 4, column = 0)
         status_label = TkActionStatusLabel(master = action_frame)
-        status_label.grid(row = 3, column = 1)
+        status_label.grid(row = 4, column = 1)
 
         ExecuteSequenceActionInterface(master=self, execute_button=execute_button, cancel_button=cancel_button, 
-                                       status_label=status_label, feedback_label=feedback_label, 
+                                       status_label=status_label, progress_label=progress_label, message_label=message_label, 
                                        action_name='sequencer/execute_sequence')
 

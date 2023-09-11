@@ -31,7 +31,7 @@ class PlannerWindow(Window):
 
         BoolMsgInterface(master=self, msg_name='planner/busy', label=label)
         
-        label = TkLabel(master=state_frame, text='Commands Path:')
+        label = TkLabel(master=state_frame, text='Commands File:')
         label.grid(row=1, column=0)
         label = TkStringLabel(master=state_frame)
         label.grid(row=1, column=1)
@@ -64,7 +64,7 @@ class PlannerWindow(Window):
         label.grid(row=2, column=0)
         entry = TkEntry(master=service_frame)
         entry.grid(row=2, column=1)
-        button = TkButton(master=service_frame, text='Set Commands Path')
+        button = TkButton(master=service_frame, text='Set Commands File')
         button.grid(row=3, column=0, columnspan=2)
 
         SetStringSrvInterface(master=self, srv_name='planner/set_commands_file', entry=entry, button=button)
