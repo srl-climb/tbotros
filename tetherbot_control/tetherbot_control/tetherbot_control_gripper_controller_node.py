@@ -17,7 +17,7 @@ class GripperControllerNode(Node2):
         super().__init__('gripper_controller')
 
         self.create_action_server(EmptyAction, self.get_name() + '/open', execute_callback = self.open_execute_callback, cancel_callback = self.cancel_callback)
-        self.create_action_server(self, EmptyAction, self.get_name() + '/close', execute_callback = self.close_execute_callback, cancel_callback = self.cancel_callback)
+        self.create_action_server(EmptyAction, self.get_name() + '/close', execute_callback = self.close_execute_callback, cancel_callback = self.cancel_callback)
 
         self._servo_open_cli = self.create_action_client(EmptyAction, 'wireless_servo/open')
         self._servo_close_cli = self.create_action_client(EmptyAction, 'wireless_servo/close')
