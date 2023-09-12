@@ -9,7 +9,7 @@ import os
 import signal
 import subprocess
 from threading import Thread, Event
-from rclpy.node import Node
+from rclpy_wrapper.node import Node2
 from ament_index_python.packages import get_package_share_directory
 from tbotlib import TbTetherbot
 from .window import Window
@@ -28,7 +28,7 @@ class App(tk.Tk):
         super().__init__()
 
         # create node representing the gui
-        self.node = Node('tetherbot_gui')
+        self.node = Node2('tetherbot_gui')
 
         self.node.declare_parameter('desc_file', '/home/climb/ros2_ws/src/tbotros_description/tbotros_description/desc/tetherbot/tetherbot_light.pkl')
         self.desc_file = self.node.get_parameter('desc_file').get_parameter_value().string_value

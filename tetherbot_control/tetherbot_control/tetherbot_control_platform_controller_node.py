@@ -4,17 +4,15 @@ import rclpy
 import rclpy.time
 import numpy as np
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.action import ActionServer, ActionClient
+from rclpy.action import ActionClient
 from rclpy.action.client import ClientGoalHandle
 from rclpy.action.server import ServerGoalHandle, GoalResponse, CancelResponse
 from custom_srvs.srv import Tension
 from custom_msgs.msg import BoolArray
 from custom_actions.action import MoveMotor, Empty as EmptyAction
 from std_srvs.srv import Trigger
-from std_msgs.msg import Float64
-from geometry_msgs.msg import PoseStamped, Pose, Vector3
-from tbotlib import TransformMatrix, TetherbotVisualizer
-from math import sqrt
+from geometry_msgs.msg import PoseStamped, Pose
+from tbotlib import TransformMatrix
 from threading import Lock
 from .tetherbot_control_base_controller_node import BaseControllerNode
 
@@ -51,13 +49,13 @@ class PlatformControllerNode(BaseControllerNode):
             self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg, i=i: self.gripper_pose_sub_callback(msg, i), 1)
 
         # actions for calibration of the tether lengths
-        ActionServer(self, EmptyAction, self.get_name() + '/calibrate_tether_lengths', 
-                     execute_callback = self.calibrate_tether_lengths_execute_callback,
-                     cancel_callback = self.calibrate_tether_lengths_cancel_callback,
-                     goal_callback = self.calibrate_tether_lengths_goal_callback)
+        self.create_action_server(EmptyAction, self.get_name() + '/calibrate_tether_lengths', 
+                                  execute_callback = self.calibrate_tether_lengths_execute_callback,
+                                  cancel_callback = self.calibrate_tether_lengths_cancel_callback,
+                                  goal_callback = self.calibrate_tether_lengths_goal_callback)
         self._move_motor_clis: list[ActionClient] = []
         for i in range(self._tbot.m):
-            self._move_motor_clis.append(ActionClient(self, MoveMotor, 'motor' + str(i) + '/faulhaber_motor/move'))
+            self._move_motor_clis.append(self.create_action_client(MoveMotor, 'motor' + str(i) + '/faulhaber_motor/move'))
         self._rate = self.create_rate(10)
         
         # length parameters of untensioned/tensioned tethers

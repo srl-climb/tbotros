@@ -6,13 +6,11 @@ import rclpy.subscription
 import rclpy.executors
 import rclpy.impl.rcutils_logger
 import tkinter as tk
-from rclpy.node import Node
-from queue import Queue
+from rclpy_wrapper.node import Node2
 from typing import TYPE_CHECKING
 from ament_index_python.packages import get_package_share_directory
 from .interface_queue import InterfaceQueue
-from .interfaces import ROSInterface, BoolMsgInterface
-from .tkinter_objects import TkLabel
+from .interfaces import ROSInterface
 
 if TYPE_CHECKING:
     from .tetherbot_gui import App
@@ -37,7 +35,7 @@ class Window(tk.Toplevel):
         self.update_loop()
 
     @property
-    def node(self) -> Node:
+    def node(self) -> Node2:
 
         return self.master.node
     

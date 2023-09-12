@@ -4,11 +4,6 @@ import rclpy
 import rclpy.task
 import numpy as np
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.action import ActionServer, ActionClient
-from rclpy.action.server import ServerGoalHandle, CancelResponse
-from custom_actions.action import Empty as EmptyAction
-from std_srvs.srv import Empty as EmptyService
-from std_msgs.msg import Bool
 from geometry_msgs.msg import PoseStamped, Pose
 from tbotlib import TransformMatrix
 from .tetherbot_control_base_controller_node import BaseControllerNode

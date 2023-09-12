@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import rclpy.executors
 import numpy as np
 
 from rclpy.node import Publisher
-from rclpy.action import ActionServer, CancelResponse, GoalResponse
+from rclpy.action import CancelResponse, GoalResponse
 from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from threading import Lock
@@ -31,7 +30,7 @@ class BaseControllerNode(BaseNode):
         ### ROS OBJECTS ###
 
         # action server
-        ActionServer(self, MoveTetherbot, self.get_name() + '/move', 
+        self.create_action_server(MoveTetherbot, self.get_name() + '/move', 
                      execute_callback = self.execute_move_callback,
                      goal_callback = self.goal_move_callback,
                      cancel_callback = self.cancel_move_callback,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from rclpy.node import Node
+from rclpy_wrapper.node import Node2
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from tf2_ros.transform_broadcaster import TransformBroadcaster
@@ -13,7 +13,7 @@ import quaternion as qu
 # NOTE: tbotlib's load function is based on pickle, which has to import tbotlib in order to function
 #       we add the path to the tbotlib inside the tetherbot_control install to make tbotlib importable
 
-class BaseNode(Node):
+class BaseNode(Node2):
 
     def __init__(self, **kwargs):
 

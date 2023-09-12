@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import rclpy
-import yaml
 import numpy as np
 import quaternion as qu
 from typing import Tuple
-from time import sleep
-from rclpy.node import Node
+from rclpy_wrapper.node import Node2
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.action import ActionServer 
 from rclpy.action.server import ServerGoalHandle, GoalResponse, CancelResponse
 from multiprocessing import Process, Queue as ProcessQueue
 from threading import Lock, Event, Thread
@@ -18,14 +15,10 @@ from custom_srvs.srv import SetString
 from geometry_msgs.msg import PoseStamped, Pose
 from std_srvs.srv import Empty, Trigger
 from std_msgs.msg import Bool, Int64, String
-from tbotlib import TbTetherbot, BsplineSmoother, ProfileQPlatform, FastProfile, \
-    ProfileQArm, PlanPlatform2Configuration, PlanArm2Pose, PlanPickAndPlace2, \
-    PlanPlatform2Hold, PlanPlatform2Gripper, PlanPlatform2Pose, FastPlanPickAndPlace, \
-    FastPlanPlatform2Configuration, GlobalPlanner, TbPlatformAlignGraph, TbPlatformPoseGraph, \
-    TbArmPoseGraph, TbGlobalGraph, TbWorkspace, CommandList, TransformMatrix, TetherbotVisualizer, yaml2planner
+from tbotlib import TbTetherbot, GlobalPlanner, CommandList, TransformMatrix, TetherbotVisualizer, yaml2planner
 
  
-class PlannerNode(Node):
+class PlannerNode(Node2):
 
     def __init__(self):
 
@@ -54,7 +47,7 @@ class PlannerNode(Node):
         self.load_planner_config()
 
         # actions
-        ActionServer(self, PlanTetherbot, self.get_name() + '/plan', 
+        self.create_action_server(PlanTetherbot, self.get_name() + '/plan', 
                      execute_callback = self.plan_action_execute_callback,
                      cancel_callback = self.plan_action_cancel_callback,
                      goal_callback = self.plan_action_goal_callback)

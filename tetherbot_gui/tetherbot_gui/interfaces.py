@@ -4,9 +4,7 @@ from tkinter import ttk
 from custom_actions.action._move_motor import MoveMotor_Goal
 from rclpy.qos import QoSProfile
 from rclpy import Future
-from rclpy.action import ActionClient
 from rclpy.action.client import ClientGoalHandle
-from rclpy.node import Node
 from std_msgs.msg import Bool, String, Float64, Int16, Int8
 from std_srvs.srv import Empty as EmptySrv, Trigger
 from geometry_msgs.msg import PoseStamped, Pose
@@ -32,36 +30,6 @@ ActionType = TypeVar('ActionType')
 GoalType = TypeVar('GoalType')
 ResultType = TypeVar('ResultType')
 FeedbackType = TypeVar('FeedbackType')
-
-
-class TkSafeActionClient(ActionClient):
-    '''
-    Calling ActionClient.destroy inside a callback function of tkinter leads to "Segmentation fault (core dumped)" error.
-    This class works around the issue by destroying the action within a one-shot timer which is executed by the nodes executor outside the tkinter callback.
-    '''
-
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-
-        self._node: Node
-        self.tk_safe_destroy_timer = self._node.create_timer(0.1, self.tk_safe_destroy_timer_callback)
-        self.tk_safe_destroy_timer.cancel()
-
-    def tk_safe_destroy(self):
-
-        self.tk_safe_destroy_timer.reset()
-        
-    def tk_safe_destroy_timer_callback(self):
-
-        self.tk_safe_destroy_timer.cancel()
-        self.destroy()
-
-    def destroy(self):
-
-        self._node.destroy_timer(self.tk_safe_destroy_timer)
-
-        return super().destroy()
 
 
 class ROSInterface():
@@ -553,7 +521,7 @@ class ActionInterface(ROSInterface, Generic[ActionType, GoalType, ResultType, Fe
             if state == 0:
                 self.reset_labels()
                 start_time = self.master.node.get_clock().now().seconds_nanoseconds()[0]
-                cli = TkSafeActionClient(self.master.node, self.action_type, self.action_name)
+                cli = self.master.node.create_action_client(self.action_type, self.action_name)
                 goal_handle: ClientGoalHandle = None
                 send_goal_future: Future = None
                 get_result_future: Future = None
@@ -606,7 +574,7 @@ class ActionInterface(ROSInterface, Generic[ActionType, GoalType, ResultType, Fe
                 state = 99
             # clean up
             elif state == 99:
-                cli.tk_safe_destroy()
+                self.master.node.destroy_action_client_tk_safe(cli)
                 break
             # exit conditions
             if self.stop_event.is_set() and not cancelling:

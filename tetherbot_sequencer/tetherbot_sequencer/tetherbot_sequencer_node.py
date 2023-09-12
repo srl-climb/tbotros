@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import rclpy
-from abc import ABC, abstractmethod
 from threading import Lock
-from rclpy.node import Node
+from rclpy_wrapper.node import Node2
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.action import ActionClient, ActionServer
+from rclpy.action import ActionClient
 from rclpy.action.server import ServerGoalHandle, GoalResponse, CancelResponse
 from rclpy.client import Client
 from custom_actions.action import MoveTetherbot, Empty as EmptyAction, ExecuteSequence
@@ -16,7 +15,7 @@ from std_srvs.srv import Trigger
 from tbotlib import TbTetherbot, CommandMoveArm, CommandMovePlatform, CommandPickGripper, CommandPlaceGripper, CommandList
 from .handler import TbHandler, TbEmptyActionHandler, TbMoveActionHandler, TbSetStringServiceHandler, TbTensionServiceHandler, TbDelayHandler, TbEmptyServiceHandler
 
-class SequencerNode(Node):
+class SequencerNode(Node2):
 
     def __init__(self):
 
@@ -41,24 +40,24 @@ class SequencerNode(Node):
         self._commands_lock = Lock()
 
         # actions
-        ActionServer(self, ExecuteSequence, self.get_name() + '/execute_sequence', 
+        self.create_action_server(ExecuteSequence, self.get_name() + '/execute_sequence', 
                      cancel_callback = self.execute_sequence_cancel_callback, 
                      execute_callback = self.execute_sequence_execute_callback, 
                      goal_callback = self.execute_sequence_goal_callback)
 
-        self._platform_move_client = ActionClient(self, MoveTetherbot, self._tbot.platform.name + '/platform_controller/move')
-        self._arm_move_client = ActionClient(self, MoveTetherbot, self._tbot.platform.arm.name + '/arm_controller/move')
+        self._platform_move_client = self.create_action_client(MoveTetherbot, self._tbot.platform.name + '/platform_controller/move')
+        self._arm_move_client = self.create_action_client(MoveTetherbot, self._tbot.platform.arm.name + '/arm_controller/move')
         self._gripper_open_clients:  list[ActionClient] = []
         self._gripper_close_clients: list[ActionClient] = []
         self._gripper_set_hold_clients: list[Client] = []
         self._gripper_set_transform_source_clients: list[Client] = []
         for gripper in self._tbot.grippers:
-            self._gripper_close_clients.append(ActionClient(self, EmptyAction, gripper.name + '/gripper_controller/close'))
-            self._gripper_open_clients.append(ActionClient(self, EmptyAction, gripper.name + '/gripper_controller/open'))
+            self._gripper_close_clients.append(self.create_action_client(EmptyAction, gripper.name + '/gripper_controller/close'))
+            self._gripper_open_clients.append(self.create_action_client(EmptyAction, gripper.name + '/gripper_controller/open'))
             self._gripper_set_hold_clients.append(self.create_client(SetString, gripper.name + '/gripper_state_publisher/set_hold'))
             self._gripper_set_transform_source_clients.append(self.create_client(SetString, gripper.name + '/gripper_state_publisher/set_transform_source'))
-        self._docking_close_client = ActionClient(self, EmptyAction, self._tbot.platform.arm.name + '/docking_controller/close')
-        self._docking_open_client = ActionClient(self, EmptyAction, self._tbot.platform.arm.name + '/docking_controller/open')
+        self._docking_close_client = self.create_action_client(EmptyAction, self._tbot.platform.arm.name + '/docking_controller/close')
+        self._docking_open_client = self.create_action_client(EmptyAction, self._tbot.platform.arm.name + '/docking_controller/open')
         
         # clients
         self._tension_tethers_client = self.create_client(Tension, self._tbot.platform.name + '/platform_controller/tension_gripper_tethers')

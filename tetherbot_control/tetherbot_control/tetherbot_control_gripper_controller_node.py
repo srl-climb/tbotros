@@ -2,26 +2,25 @@ from __future__ import annotations
 
 import rclpy
 
-from rclpy.node import Node
+from rclpy_wrapper.node import Node2
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.action import ActionServer, ActionClient
 from rclpy.action.server import ServerGoalHandle, CancelResponse
 from custom_actions.action import Empty as EmptyAction
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty as EmptyService
 from threading import Lock
 
-class GripperControllerNode(Node):
+class GripperControllerNode(Node2):
 
     def __init__(self):
 
         super().__init__('gripper_controller')
 
-        ActionServer(self, EmptyAction, self.get_name() + '/open', execute_callback = self.open_execute_callback, cancel_callback = self.cancel_callback)
-        ActionServer(self, EmptyAction, self.get_name() + '/close', execute_callback = self.close_execute_callback, cancel_callback = self.cancel_callback)
+        self.create_action_server(EmptyAction, self.get_name() + '/open', execute_callback = self.open_execute_callback, cancel_callback = self.cancel_callback)
+        self.create_action_server(self, EmptyAction, self.get_name() + '/close', execute_callback = self.close_execute_callback, cancel_callback = self.cancel_callback)
 
-        self._servo_open_cli = ActionClient(self, EmptyAction, 'wireless_servo/open')
-        self._servo_close_cli = ActionClient(self, EmptyAction, 'wireless_servo/close')
+        self._servo_open_cli = self.create_action_client(EmptyAction, 'wireless_servo/open')
+        self._servo_close_cli = self.create_action_client(EmptyAction, 'wireless_servo/close')
         
         self.create_service(EmptyService, self.get_name() + '/confirm_contact', self.confirm_contact_srv_callback)
         self.create_subscription(Bool, self.get_name() + '/contactswitch', self.contactswitch_sub_callback, 1)

@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from tkinter import ttk
 from .tkinter_objects import TkLabelFrame, TkLabel, TkBoolLabel, TkButton, TkPoseEntryFrame, \
-    TkCancelButton, TkActionStatusLabel, TkPoseLabelFrame, TkOptionMenu, TkStringLabel, TkEntry
-from .interfaces import BoolMsgInterface, Int8MsgInterface, EmptySrvInterface, StringMsgInterface, SetStringSrvInterface, \
-    PoseStampedMsgInterface, EmptyActionInterface, TriggerSrvInterface, PlanTetherbotActionInterface
+    TkCancelButton, TkActionStatusLabel, TkOptionMenu, TkStringLabel, TkEntry
+from .interfaces import BoolMsgInterface, EmptySrvInterface, StringMsgInterface, SetStringSrvInterface, \
+    TriggerSrvInterface, PlanTetherbotActionInterface
 from .window import Window
 
 if TYPE_CHECKING:
