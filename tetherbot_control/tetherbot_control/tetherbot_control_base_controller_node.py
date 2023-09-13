@@ -10,7 +10,7 @@ from threading import Lock
 from custom_msgs.msg import MotorPosition
 from custom_actions.action import MoveTetherbot
 from std_srvs.srv import Empty
-from std_msgs.msg import Bool, Int8
+from std_msgs.msg import Bool, Int8, Float64
 from geometry_msgs.msg import Pose, PoseStamped
 from tbotlib import TbTetherbot
 from .tetherbot_control_base_node import BaseNode
@@ -43,9 +43,9 @@ class BaseControllerNode(BaseNode):
         # publishers
         self._target_pose_pub = self.create_publisher(PoseStamped, self.get_name() + '/target_pose', 1)
         self._control_enabled_pub = self.create_publisher(Bool, self.get_name() + '/control_enabled', 1)
-        self._target_position_pubs: list[Publisher] = []
+        self._csp_target_position_pubs: list[Publisher] = []
         for name in default_motor_node_names:
-            self._target_position_pubs.append(self.create_publisher(MotorPosition, name + '/target_position', 100))
+            self._csp_target_position_pubs.append(self.create_publisher(Float64, name + '/csp_target_position', 100))
 
         # subscriptions
         self._motor_modes: list[int] = []
@@ -109,10 +109,11 @@ class BaseControllerNode(BaseNode):
             target_positions = self.control_function(self._target_pose)
 
             # publish target positions to the motors
-            for target_position_pub, q in zip(self._target_position_pubs, target_positions):
-                msg = MotorPosition()
-                msg.target_position = q
-                target_position_pub.publish(msg)
+            for csp_target_position_pub, q in zip(self._csp_target_position_pubs, target_positions):
+                msg = Float64()
+                msg.data = q
+                self.get_logger().info('publishing')
+                csp_target_position_pub.publish(msg)
 
     def watchdog_loop(self):
 
