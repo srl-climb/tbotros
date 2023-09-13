@@ -82,4 +82,4 @@ def generate_launch_description():
     
     bag_file =  os.path.expanduser('~') + '/ros2_ws/bag/' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '/'
 
-    return LaunchDescription([ExecuteProcess(cmd=['ros2', 'bag', 'record', '-o', bag_file, topics], output="screen")])
+    return LaunchDescription([ExecuteProcess(cmd=['ros2', 'bag', 'record', '-o', bag_file ] + topics, output="screen")])
