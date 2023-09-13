@@ -21,7 +21,7 @@ class Window(tk.Toplevel):
     def __init__(self, master: App, title: str = 'Window', icon_file: str = None):
 
         self.master: App = None # for correct type hinting
-        self.queue = InterfaceQueue(1000)
+        self.queue = InterfaceQueue(2000)
         self.interfaces: list[ROSInterface] = []
 
         super().__init__(master)
@@ -53,7 +53,7 @@ class Window(tk.Toplevel):
         return super().destroy()
     
     def update_loop(self):
-
+        
         if self.queue.full():
             self.get_logger().warn('Window update queue full', throttle_duration_sec=1)
 
@@ -61,7 +61,7 @@ class Window(tk.Toplevel):
             label, data = self.queue.get()
             label.update_data(data)
 
-        self.after(100, self.update_loop) 
+        self.after(25, self.update_loop) 
 
     def get_logger(self) -> rclpy.impl.rcutils_logger.RcutilsLogger:
 
