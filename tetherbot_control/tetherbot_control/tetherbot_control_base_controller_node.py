@@ -112,7 +112,7 @@ class BaseControllerNode(BaseNode):
             for csp_target_position_pub, q in zip(self._csp_target_position_pubs, target_positions):
                 msg = Float64()
                 msg.data = q
-                self.get_logger().info('publishing')
+
                 csp_target_position_pub.publish(msg)
 
     def watchdog_loop(self):
