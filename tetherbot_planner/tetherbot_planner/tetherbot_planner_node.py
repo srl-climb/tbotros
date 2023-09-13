@@ -16,7 +16,7 @@ from geometry_msgs.msg import PoseStamped, Pose
 from std_srvs.srv import Empty, Trigger
 from std_msgs.msg import Bool, Int64, String
 from tbotlib import TbTetherbot, GlobalPlanner, CommandList, TransformMatrix, TetherbotVisualizer, yaml2planner
-
+from time import sleep
  
 class PlannerNode(Node2):
 
@@ -71,6 +71,8 @@ class PlannerNode(Node2):
         self.create_timer(1, self.timer_callback)
         
         self._commands = CommandList()
+        self._commands = CommandList().load('/home/climb/ros2_ws/commands/command0.pkl')
+        self.get_logger().info('loaded:' + str(self._commands))
         self._commands_saved = False
         self._commands_lock = Lock()
         self._busy_lock = Lock()
@@ -183,7 +185,7 @@ class PlannerNode(Node2):
                     kwargs = {'grip_idx': request.gripper_index, 
                               'hold_idx': request.hold_index, 
                               'start_state': 0, 
-                              'goal_state': 5}
+                              'goal_state': 10}
                 elif request.mode == 5: # plan platform to configuration
                     planner = self._platform2configuration
                     kwargs = {'grip_idx': request.gripper_index}
@@ -269,6 +271,8 @@ class PlannerNode(Node2):
     
     def display_commands_srv_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
         
+        self.update_tbot()
+
         thread = Thread(target = self.display_func, args = (self._tbot, self._stop_event, self._commands))
         thread.start()
         # NOTE: The open3d functions are run in a seperate thread as using a timer_callback leads to warnings and lag
@@ -280,21 +284,24 @@ class PlannerNode(Node2):
 
         vi = TetherbotVisualizer(tbot)
         state = 0
+        i = 0
 
         while not stop_event.is_set() and vi.opened:
             if state == 0:
-                if commands:
-                    command = commands.pop(0)
+                if i < len(commands):
+                    commands[i].reset()
                     state = 1
                 else:
                     state = 4
             if state == 1:
-                done = command.do(tbot, 100)
+                done = commands[i].do(tetherbot=tbot, step=150)
                 if done:
+                    i = i + 1
                     state = 0
                 else:
                     state = 1
             elif state == 4:
+                sleep(0.1)
                 pass
             
             vi.update()  
