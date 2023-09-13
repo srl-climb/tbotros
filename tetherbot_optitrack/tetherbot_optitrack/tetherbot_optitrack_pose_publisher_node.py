@@ -12,15 +12,15 @@ Transforms the origin of the tbot_center coordinate frame into
 map coordinate frame and publishes it as a PoseStamped message into a topic
 '''
 
-class TbotFrameListener(Node):
+class PosePublisherNode(Node):
 
     def __init__(self):
-        super().__init__('tetherbot_optitrack')
+        super().__init__('pose_publisher')
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.create_timer(0.1, self.timer_callback)        
-        self.pose_publisher = self.create_publisher(PoseStamped, self.get_name() + '/pose', 1)
+        self.platform_pose_publisher = self.create_publisher(PoseStamped, self.get_name() + '/platform_pose', 1)
 
         self.get_logger().info('Tetherbot Optitrack Pose is being published!')
 
@@ -40,14 +40,14 @@ class TbotFrameListener(Node):
             msg.pose.orientation.z = tf.transform.rotation.z
             msg.pose.orientation.w = tf.transform.rotation.w
 
-            self.pose_publisher.publish(msg)
+            self.platform_pose_publisher.publish(msg)
 
         except TransformException:
             self.get_logger().warning('Transformation from map to tbot_center not available!')
 
 def main():
     rclpy.init()
-    node = TbotFrameListener()
+    node = PosePublisherNode()
     try:
         try:
             rclpy.spin(node)

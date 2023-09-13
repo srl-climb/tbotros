@@ -10,8 +10,10 @@
     <node name="rviz2" pkg="rviz2" exec="rviz2" args="-d $(var rviz_config)"/>
     -->
     <!-- Script to convert data points into markers for Rviz -->
-    <node pkg="mocap_marker_viz" exec="mocap_marker_viz" name="mocap_marker_viz"/>
+    <node pkg="mocap_marker_viz" exec="mocap_marker_viz" name="mocap_marker_viz" namespace="mocap_optitrack"/>
 
-    <node pkg="tetherbot_optitrack" exec="tetherbot_tbot_calibration" name="tetherbot_tbot_calibration"/>
-
+    <node pkg="tetherbot_optitrack" exec="calibration_node" name="calibration_node" namespace="tetherbot_optitrack">
+        <remap from="/tetherbot_optitrack/tf" to="/tf"/>
+        <remap from="/tetherbot_optitrack/tf_static" to="/tf_static"/>
+    </node>
 </launch>

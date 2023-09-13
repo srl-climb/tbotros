@@ -13,10 +13,10 @@ from ament_index_python.packages import get_package_share_directory
 Calibrates the target tbot coordinate system for adaption of the offsets of estimated tbot cs
 '''
 
-class ROS2TetherbotCoordinateSystemCalibrationNode(Node):
+class CalibrationNode(Node):
 
     def __init__(self):
-        super().__init__('tbot_center_correction_node')
+        super().__init__('calibration_node')
 
         self.calib_srv = self.create_service(Empty, self.get_name() + '/tetherbot_coordinate_calibration_service', self.coordinate_calib_srv)
         self.tf_buffer = Buffer()
@@ -110,7 +110,7 @@ class ROS2TetherbotCoordinateSystemCalibrationNode(Node):
 
 def main():
     rclpy.init()
-    node = ROS2TetherbotCoordinateSystemCalibrationNode()
+    node = CalibrationNode()
 
     try:
         try:

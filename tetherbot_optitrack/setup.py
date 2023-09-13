@@ -25,9 +25,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'ros2_tetherbot_motive_transform_broadcaster = tetherbot_optitrack.ros2_tetherbot_motive_transform_broadcaster:main',
-            'ros2_tetherbot_tbot_pose_publisher = tetherbot_optitrack.ros2_tetherbot_tbot_pose_publisher:main',
-            'tetherbot_tbot_calibration = tetherbot_optitrack.ros2_tetherbot_tbot_calibration:main',
+            'calibration_node = tetherbot_optitrack.tetherbot_optitrack_calibration_node:main',
+            'motive_transform_broadcaster = tetherbot_optitrack.tetherbot_optitrack_motive_transform_broadcaster_node:main',
+            'pose_publisher = tetherbot_optitrack.tetherbot_optitrack_pose_publisher_node:main',
         ],
     },
 )
