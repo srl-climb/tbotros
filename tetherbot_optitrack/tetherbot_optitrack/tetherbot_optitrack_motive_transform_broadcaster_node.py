@@ -20,7 +20,7 @@ class MotiveTransformBroadcasterNode(Node):
         self.transform_msg.child_frame_id = 'tbot_motive_origin'
     
     def tbot_pose_callback(self, msg):
-
+        
         try:
             self.transform_msg.transform.translation.x = msg.rigidbodies[0].pose.position.x
             self.transform_msg.transform.translation.y = msg.rigidbodies[0].pose.position.y
