@@ -191,7 +191,7 @@ class App(tk.Tk):
         stop_event.set()
         spin_thread.join()
 
-    def ros_spin_thread(self, node: Node, stop_event: Event):
+    def ros_spin_thread(self, node: Node2, stop_event: Event):
 
         executor = rclpy.executors.SingleThreadedExecutor()
         executor.add_node(node)
