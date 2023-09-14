@@ -17,7 +17,6 @@ class ArmControllerNode(BaseControllerNode):
 
         self.declare_parameter('update_platform_pose_during_control', False)
         self._update_platform_pose_during_control = self.get_parameter('update_platform_pose_during_control').get_parameter_value().bool_value
-
         self.create_subscription(PoseStamped, self._tbot.platform.name + '/platform_state_publisher/pose', self.platform_pose_sub_callback, 1)
 
     def control_function(self, target_pose: Pose) -> np.ndarray:

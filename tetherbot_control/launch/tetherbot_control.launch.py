@@ -51,6 +51,7 @@ def generate_launch_description():
             package = 'robot_state_publisher',
             executable = 'robot_state_publisher',
             name = 'robot_state_publisher',
+            arguments=['--ros-args', '--log-level', 'warn'],
             parameters = [{'robot_description': robot_desc}]))
  
     # === CAMERAS AND ARUCO MARKERS ===
@@ -176,7 +177,8 @@ def generate_launch_description():
             package = 'tetherbot_control',
             namespace = tbot.platform.arm.name,
             executable = 'tetherbot_control_arm_controller',
-            parameters = [{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl')}],
+            parameters = [{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl'),
+                           'update_platform_pose_during_control': False}],
             remappings = [*action_remap('/' + tbot.platform.arm.name + '/motor10/faulhaber_motor/move', '/motor10/faulhaber_motor/move'),
                           *action_remap('/' + tbot.platform.arm.name + '/motor11/faulhaber_motor/move', '/motor11/faulhaber_motor/move'),
                           *action_remap('/' + tbot.platform.arm.name + '/motor12/faulhaber_motor/move', '/motor12/faulhaber_motor/move'),
@@ -212,7 +214,7 @@ def generate_launch_description():
             executable='tetherbot_control_platform_state_publisher',
             parameters=[{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl'), 
                          'mode_2d': True,
-                         'fixed_z_value': tbot.platform.T_world.r}],
+                         'fixed_z_value': float(tbot.platform.T_world.r[2])}],
             remappings = [('/' + tbot.platform.name + '/motor0/position', '/motor0/faulhaber_motor/position'),
                           ('/' + tbot.platform.name + '/motor1/position', '/motor1/faulhaber_motor/position'),
                           ('/' + tbot.platform.name + '/motor2/position', '/motor2/faulhaber_motor/position'),
@@ -238,8 +240,7 @@ def generate_launch_description():
             package = 'tetherbot_control',
             namespace = tbot.platform.name,
             executable = 'tetherbot_control_platform_controller',
-            parameters = [{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl'),
-                           'update_platform_pose_during_control': False}],
+            parameters = [{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl')}],
             remappings = [*action_remap('/' + tbot.platform.name + '/motor0/faulhaber_motor/move', '/motor0/faulhaber_motor/move'),
                         *action_remap('/' + tbot.platform.name + '/motor1/faulhaber_motor/move', '/motor1/faulhaber_motor/move'),
                         *action_remap('/' + tbot.platform.name + '/motor2/faulhaber_motor/move', '/motor2/faulhaber_motor/move'),

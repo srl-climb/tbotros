@@ -33,7 +33,7 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         self._mode_2d = self.get_parameter('mode_2d').get_parameter_value().bool_value
         self._fixed_z_value = self.get_parameter('fixed_z_value').get_parameter_value().double_value
         self.set_transform_source(self.get_parameter('default_transform_source').get_parameter_value().string_value)
-
+        
         # by default the gripper parent is the hold, but we set it to the world/map
         # this way T_local gets referenced to the world/map and not to the hold frame
         for gripper in self._tbot.grippers:
@@ -92,7 +92,7 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
             pose.pose.orientation.y = q[2]
             pose.pose.orientation.z = q[3]
         if self._mode_2d:
-            pose.pose.position.z = self._fixed_z_value
+            pose.pose.position.z = float(self._fixed_z_value)
 
         # publish pose
         pose.header.stamp = self.get_clock().now().to_msg()
