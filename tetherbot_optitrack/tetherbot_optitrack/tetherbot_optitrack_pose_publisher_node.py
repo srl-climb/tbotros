@@ -31,6 +31,7 @@ class PosePublisherNode(Node):
             tf = self.tf_buffer.lookup_transform('map', 'tbot_center', rclpy.time.Time())
 
             msg = PoseStamped()
+            msg.header.frame_id = 'map'
             msg.header.stamp = self.get_clock().now().to_msg()
             msg.pose.position.x = tf.transform.translation.x
             msg.pose.position.y = tf.transform.translation.y
