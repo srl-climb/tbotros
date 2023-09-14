@@ -54,4 +54,4 @@ class MiscWindow(Window):
         button = TkButton(master=service_frame, text='Tetherbot Pose Calibration')
         button.grid(row=0, column=0)
 
-        EmptySrvInterface(master=self, srv_name='/tetherbot_tbot_calibration/tetherbot_coordinate_calibration_service', button=button)
+        EmptySrvInterface(master=self, srv_name='/tetherbot_optitrack/calibration_node/tetherbot_coordinate_calibration_service', button=button)
