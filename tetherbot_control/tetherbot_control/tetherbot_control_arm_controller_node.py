@@ -5,6 +5,7 @@ import rclpy.task
 import numpy as np
 from rclpy.executors import MultiThreadedExecutor
 from geometry_msgs.msg import PoseStamped, Pose
+from std_srvs.srv import Empty
 from tbotlib import TransformMatrix
 from .tetherbot_control_base_controller_node import BaseControllerNode
 
@@ -14,21 +15,26 @@ class ArmControllerNode(BaseControllerNode):
 
         super().__init__(node_name = 'arm_controller', default_motor_node_names = ['motor10/faulhaber_motor', 'motor11/faulhaber_motor', 'motor12/faulhaber_motor'])
 
+        self.declare_parameter('update_platform_pose_during_control', False)
+        self._update_platform_pose_during_control = self.get_parameter('update_platform_pose_during_control').get_parameter_value().bool_value
+
         self.create_subscription(PoseStamped, self._tbot.platform.name + '/platform_state_publisher/pose', self.platform_pose_sub_callback, 1)
 
     def control_function(self, target_pose: Pose) -> np.ndarray:
 
         # calculate joint states (deg, m, m)
         qs = self._tbot.platform.arm.ivk(TransformMatrix(self.pose2mat(target_pose)))
-        qs[0] = qs[0] * (180/np.pi)
-        self.get_logger().info('platform pose q:' + str(self._tbot.platform.T_local.q))
-        self.get_logger().info('platform pose r:' + str(self._tbot.platform.T_local.r))
-        self.get_logger().info('target joint states:' + str(qs))                                                 
+        qs[0] = qs[0] * (180/np.pi)                                               
+        
         return qs
     
     def platform_pose_sub_callback(self, msg: PoseStamped):
 
-        self._tbot.platform.T_local = TransformMatrix(self.pose2mat(msg.pose))
+        if self._control_enabled and not self._update_platform_pose_during_control:
+            pass
+        else:
+            self._tbot.platform.T_local = TransformMatrix(self.pose2mat(msg.pose))
+    
 
 def main(args = None):
 

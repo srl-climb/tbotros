@@ -21,12 +21,17 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
 
         # declare parameters
         self.declare_parameter('default_transform_source', 'optitrack')
+        self.declare_parameter('mode_2d', True)
+        self.declare_parameter('fixed_z_value', 0.068)
 
         # set parameters
         self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
         self._joint_states = self._tbot.l
         self._zed_pose = PoseStamped()
         self._optitrack_pose = PoseStamped()
+        self._transform_source = None
+        self._mode_2d = self.get_parameter('mode_2d').get_parameter_value().bool_value
+        self._fixed_z_value = self.get_parameter('fixed_z_value').get_parameter_value().double_value
         self.set_transform_source(self.get_parameter('default_transform_source').get_parameter_value().string_value)
 
         # by default the gripper parent is the hold, but we set it to the world/map
@@ -69,7 +74,7 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         msg.data = self._joint_states.astype(float).tolist()
         self._joint_states_pub.publish(msg)
 
-        # publish pose
+        # calculate pose
         pose = PoseStamped()
         if self._transform_source == 'zed':
             pose = self._zed_pose
@@ -79,8 +84,6 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
             self._tbot.fwk(self._joint_states, self._tbot.platform.T_world) # use previous transform as first guess for fwk
             q = self._tbot.platform.T_world.q
             r = self._tbot.platform.T_world.r
-            pose.header.stamp = self.get_clock().now().to_msg()
-            pose.header.frame_id = 'map'
             pose.pose.position.x = r[0]
             pose.pose.position.y = r[1]
             pose.pose.position.z = r[2]
@@ -88,6 +91,12 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
             pose.pose.orientation.x = q[1]
             pose.pose.orientation.y = q[2]
             pose.pose.orientation.z = q[3]
+        if self._mode_2d:
+            pose.pose.position.z = self._fixed_z_value
+
+        # publish pose
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.header.frame_id = 'map'
         self._pose_pub.publish(pose)
 
         # publish transform

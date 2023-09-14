@@ -23,9 +23,6 @@ enable_grippers = True
 enable_platform = True
 enable_other = True
 
-#sys.path.append(os.path.join(get_package_prefix('tetherbot_control'), 'lib/python3.8/site-packages/tetherbot_control'))
-# NOTE: tbotlib's load function is based on pickle, which has to import tbotlib in order to function
-#       we add the path to the tbotlib inside the tetherbot_control install to make tbotlib importable
                               
 def action_remap(_from: str, _to: str) -> list[tuple]:
 
@@ -213,7 +210,9 @@ def generate_launch_description():
             package = 'tetherbot_control',
             namespace = tbot.platform.name,
             executable='tetherbot_control_platform_state_publisher',
-            parameters=[{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl')}],
+            parameters=[{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl'), 
+                         'mode_2d': True,
+                         'fixed_z_value': tbot.platform.T_world.r}],
             remappings = [('/' + tbot.platform.name + '/motor0/position', '/motor0/faulhaber_motor/position'),
                           ('/' + tbot.platform.name + '/motor1/position', '/motor1/faulhaber_motor/position'),
                           ('/' + tbot.platform.name + '/motor2/position', '/motor2/faulhaber_motor/position'),
@@ -239,7 +238,8 @@ def generate_launch_description():
             package = 'tetherbot_control',
             namespace = tbot.platform.name,
             executable = 'tetherbot_control_platform_controller',
-            parameters = [{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl')}],
+            parameters = [{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl'),
+                           'update_platform_pose_during_control': False}],
             remappings = [*action_remap('/' + tbot.platform.name + '/motor0/faulhaber_motor/move', '/motor0/faulhaber_motor/move'),
                         *action_remap('/' + tbot.platform.name + '/motor1/faulhaber_motor/move', '/motor1/faulhaber_motor/move'),
                         *action_remap('/' + tbot.platform.name + '/motor2/faulhaber_motor/move', '/motor2/faulhaber_motor/move'),
