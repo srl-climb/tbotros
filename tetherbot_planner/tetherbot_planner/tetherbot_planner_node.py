@@ -17,7 +17,7 @@ from std_srvs.srv import Empty, Trigger
 from std_msgs.msg import Bool, Int64, String
 from tbotlib import TbTetherbot, GlobalPlanner, CommandList, TransformMatrix, TetherbotVisualizer, yaml2planner
 from time import sleep
- 
+
 class PlannerNode(Node2):
 
     def __init__(self):
@@ -71,8 +71,6 @@ class PlannerNode(Node2):
         self.create_timer(1, self.timer_callback)
         
         self._commands = CommandList()
-        self._commands = CommandList().load('/home/climb/ros2_ws/commands/command0.pkl')
-        self.get_logger().info('loaded:' + str(self._commands))
         self._commands_saved = False
         self._commands_lock = Lock()
         self._busy_lock = Lock()
