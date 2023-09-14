@@ -61,10 +61,10 @@ class SequencerNode(Node2):
         
         # clients
         self._tension_tethers_client = self.create_client(Tension, self._tbot.platform.name + '/platform_controller/tension_gripper_tethers')
-        self._enable_arm_control_client = self.create_client(Tension, self._tbot.platform.arm.name + '/arm_controller/enable_control')
-        self._disable_arm_control_client = self.create_client(Tension, self._tbot.platform.arm.name + '/arm_controller/disable_control')
-        self._enable_platform_control_client = self.create_client(Tension, self._tbot.platform.name + '/platform_controller/enable_control')
-        self._disable_platform_control_client = self.create_client(Tension, self._tbot.platform.name + '/platform_controller/disable_control')
+        self._enable_arm_control_client = self.create_client(EmptyService, self._tbot.platform.arm.name + '/arm_controller/enable_control')
+        self._disable_arm_control_client = self.create_client(EmptyService, self._tbot.platform.arm.name + '/arm_controller/disable_control')
+        self._enable_platform_control_client = self.create_client(EmptyService, self._tbot.platform.name + '/platform_controller/enable_control')
+        self._disable_platform_control_client = self.create_client(EmptyService, self._tbot.platform.name + '/platform_controller/disable_control')
 
         # services
         self.create_service(SetString, self.get_name() + '/set_commands_file', self.set_commands_file_callback)
