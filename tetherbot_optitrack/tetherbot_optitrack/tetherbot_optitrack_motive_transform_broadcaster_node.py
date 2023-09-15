@@ -13,7 +13,7 @@ class MotiveTransformBroadcasterNode(Node):
     def __init__(self):
         super().__init__('motive_transform_broadcaster')
 
-        self.tether_pose_subscriber = self.create_subscription(RigidBodies, '/mocap_optitrack/rigid_bodies', self.tbot_pose_callback, 1)
+        self.tether_pose_subscriber = self.create_subscription(RigidBodies, '/optitrack/rigid_bodies', self.tbot_pose_callback, 1)
 
         self.transform_msg = TransformStamped()
         self.transform_msg.header.frame_id = 'motive_origin'

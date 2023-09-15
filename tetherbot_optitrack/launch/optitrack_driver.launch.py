@@ -25,7 +25,7 @@ import launch
 from launch import LaunchDescription
 from launch.actions import EmitEvent
 from launch.actions import SetEnvironmentVariable
-from launch_ros.actions import LifecycleNode
+from launch_ros.actions import LifecycleNode, Node
 from launch_ros.events.lifecycle import ChangeState
 
 import lifecycle_msgs.msg
@@ -39,17 +39,22 @@ def generate_launch_description():
     stdout_linebuf_envvar = SetEnvironmentVariable(
         'RCUTILS_CONSOLE_STDOUT_LINE_BUFFERED', '1')
 
-    # print('')
-    # print('params_file_path: ', params_file_path)
-    # print('')
-
+    # Driver node
     driver_node = LifecycleNode(
         name='mocap_optitrack_driver_node', 
-        namespace='mocap_optitrack',
+        namespace='optitrack',
         package='mocap_optitrack_driver',
         executable='mocap_optitrack_driver_main',
         output='screen',
         parameters=[params_file_path],
+    )
+
+    # Node to convert data points into markers
+    viz_node = Node(
+        name = 'mocap_marker_viz',
+        package = 'mocap_marker_viz',
+        namespace = 'optitrack',
+        executable = 'mocap_marker_viz'
     )
 
     # Make the driver node take the 'configure' transition
@@ -69,11 +74,12 @@ def generate_launch_description():
     )
 
     # Create the launch description and populate
-    ld = LaunchDescription()
+    launch_description = LaunchDescription()
 
-    ld.add_action(stdout_linebuf_envvar)
-    ld.add_action(driver_node)
-    ld.add_action(driver_configure_trans_event)
-    ld.add_action(driver_activate_trans_event)
+    launch_description.add_action(stdout_linebuf_envvar)
+    launch_description.add_action(driver_node)
+    launch_description.add_action(viz_node)
+    launch_description.add_action(driver_configure_trans_event)
+    launch_description.add_action(driver_activate_trans_event)
 
-    return ld
+    return launch_description

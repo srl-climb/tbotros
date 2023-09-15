@@ -41,7 +41,7 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
 
         # subscriptions
         self.create_subscription(PoseStamped, '/zedm/zed_node/pose', self.zed_pose_sub_callback, 1)
-        self.create_subscription(PoseStamped, '/tetherbot_optitrack/pose_publisher/platform_pose', self.optitrack_pose_sub_callback, 1)
+        self.create_subscription(PoseStamped, '/optitrack/pose_publisher/platform_pose', self.optitrack_pose_sub_callback, 1)
         for i in range(self._tbot.m):
             self.create_subscription(MotorPosition, 'motor' + str(i) + '/position', lambda msg, i=i: self.motor_position_sub_callback(msg, i), 1)
         for i in range(self._tbot.k):

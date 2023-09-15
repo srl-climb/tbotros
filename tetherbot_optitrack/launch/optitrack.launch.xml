@@ -1,0 +1,14 @@
+<launch>
+    <!-- Optitrack Client Script -->
+    <include file="$(find-pkg-share tetherbot_optitrack)/launch/optitrack_driver.launch.py"/>
+
+    <!-- Transformations -->
+    <include file="$(find-pkg-share tetherbot_optitrack)/launch/optitrack_tf.launch.py"/>
+    
+    <!-- Rviz2 
+    <let name="rviz_config" value="/home/climb/tetherbot_ws/src/tetherbot_optitrack/config/tether-rviz.rviz"/>
+    <node name="rviz2" pkg="rviz2" exec="rviz2" args="-d $(var rviz_config)"/>
+    -->
+
+
+</launch>

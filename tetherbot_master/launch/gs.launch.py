@@ -75,7 +75,7 @@ def generate_launch_description():
     if enable_optitrack:
         executables.append(IncludeLaunchDescription(
             AnyLaunchDescriptionSource(
-                os.path.join(get_package_share_directory('tetherbot_optitrack'), 'launch', 'tetherbot_optitrack.launch.xml'))
+                os.path.join(get_package_share_directory('tetherbot_optitrack'), 'launch', 'optitrack_driver.launch.xml'))
             ))
         
     # rviz
