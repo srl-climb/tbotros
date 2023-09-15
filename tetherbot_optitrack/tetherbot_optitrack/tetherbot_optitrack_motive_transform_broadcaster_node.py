@@ -13,7 +13,8 @@ class MotiveTransformBroadcasterNode(Node):
     def __init__(self):
         super().__init__('motive_transform_broadcaster')
 
-        self.tether_pose_subscriber = self.create_subscription(RigidBodies, '/optitrack/rigid_bodies', self.tbot_pose_callback, 1)
+        self.create_subscription(RigidBodies, '/optitrack/rigid_bodies', self.tbot_pose_callback, 1)
+        self.tf_broadcaster = TransformBroadcaster(self)
 
         self.transform_msg = TransformStamped()
         self.transform_msg.header.frame_id = 'motive_origin'
@@ -31,7 +32,7 @@ class MotiveTransformBroadcasterNode(Node):
             self.transform_msg.transform.rotation.y = msg.rigidbodies[0].pose.orientation.z
             self.transform_msg.transform.rotation.z = msg.rigidbodies[0].pose.orientation.w
 
-            TransformBroadcaster(self).sendTransform(self.transform_msg)
+            self.tf_broadcaster.sendTransform(self.transform_msg)
         
         except:
             self.get_logger().warning('No rigid body available!', throttle_duration_sec=2)
