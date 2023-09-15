@@ -33,10 +33,8 @@ class PlannerWindow(Window):
         
         label = TkLabel(master=state_frame, text='Commands File:')
         label.grid(row=1, column=0)
-        label = TkStringLabel(master=state_frame)
+        label = TkStringLabel(master=state_frame, enable_tooltip=True, anchor="w", justify="left")
         label.grid(row=1, column=1)
-        label.configure(width=25)
-        label.bind('<Configure>', lambda e: label.config(wraplength=label.winfo_width()-10))
 
         StringMsgInterface(master=self, msg_name='planner/commands_file', label=label)
 
@@ -154,10 +152,9 @@ class PlannerWindow(Window):
         cancel_button.grid(row=1, column=0, columnspan=2)
         label = TkLabel(master=frame, text='Current: ')
         label.grid(row=2, column=0)
-        feedback_label = TkStringLabel(master=frame)
+        feedback_label = TkStringLabel(master=frame, anchor="nw", justify='left')
+        feedback_label.config(height=5, width=25, wraplength=200)
         feedback_label.grid(row=2,column=1)
-        feedback_label.configure(width=25, height=6)
-        feedback_label.bind('<Configure>', lambda e: feedback_label.config(wraplength=feedback_label.winfo_width()-10))
         label = TkLabel(master=frame, text='Status:', width=10)
         label.grid(row=3, column=0)
         status_label = TkActionStatusLabel(master=frame)

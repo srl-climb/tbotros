@@ -1,8 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from .tkinter_objects import TkLabelFrame, TkLabel, TkBoolLabel, TkStringLabel, TkButton, TkEntry, TkCancelButton, TkActionStatusLabel
+from .tkinter_objects import TkLabelFrame, TkLabel, TkBoolLabel, TkStringLabel, TkButton, TkEntry, TkCancelButton, TkActionStatusLabel, TkUIntEntry
 from .interfaces import BoolMsgInterface, StringMsgInterface, SetStringSrvInterface, TriggerSrvInterface, ExecuteSequenceActionInterface, EmptySrvInterface
 from .window import Window
+import tkinter as tk
+
 
 if TYPE_CHECKING:
     from .tetherbot_gui import App
@@ -28,10 +30,8 @@ class SequencerWindow(Window):
 
         label = TkLabel(master=state_frame, text='Commands File:')
         label.grid(row=1, column=0)
-        label = TkStringLabel(master=state_frame)
+        label = TkStringLabel(master=state_frame, anchor="w", justify="left", enable_tooltip=True)
         label.grid(row=1, column=1)
-        label.configure(width=25)
-        label.bind('<Configure>', lambda e: label.config(wraplength=label.winfo_width()-10))
 
         StringMsgInterface(master=self, label=label, msg_name='sequencer/commands_file')
 
@@ -89,22 +89,27 @@ class SequencerWindow(Window):
         next_button.grid(row=1, column=0, columnspan=2)
         cancel_button = TkCancelButton(master=action_frame)
         cancel_button.grid(row=2, column=0, columnspan=2)
+        label = TkLabel(master=action_frame, text='Start Index:')
+        label.grid(row=3,column=0)
+        start_label = TkUIntEntry(master=action_frame)
+        start_label.grid(row=3, column=1)
+        start_label.config(width=25)
         label = TkLabel(master=action_frame, text='Progress:')
-        label.grid(row=3, column=0)
-        progress_label = TkStringLabel(master=action_frame)
-        progress_label.grid(row=3, column=1)
-        label = TkLabel(master=action_frame, text='Message:')
         label.grid(row=4, column=0)
-        message_label = TkStringLabel(master=action_frame)
-        message_label.configure(height=3)
-        message_label.bind('<Configure>', lambda e: message_label.config(wraplength=message_label.winfo_width()-10))
-        message_label.grid(row=4, column=1)
-        label = TkLabel(master=action_frame, text='Status:', width=10)
+        progress_label = TkStringLabel(master=action_frame)
+        progress_label.grid(row=4, column=1)
+        progress_label.config(width=25)
+        label = TkLabel(master=action_frame, text='Message:')
         label.grid(row=5, column=0)
+        message_label = TkStringLabel(master=action_frame, anchor="nw", justify='left')
+        message_label.config(height=5, width=25, wraplength=200)
+        message_label.grid(row=5, column=1)
+        label = TkLabel(master=action_frame, text='Status:', width=10)
+        label.grid(row=6, column=0)
         status_label = TkActionStatusLabel(master=action_frame)
-        status_label.grid(row=5, column=1)
+        status_label.grid(row=6, column=1)
 
         ExecuteSequenceActionInterface(master=self, execute_button=execute_button, cancel_button=cancel_button, 
-                                       status_label=status_label, progress_label=progress_label, message_label=message_label, 
+                                       status_label=status_label, progress_label=progress_label, message_label=message_label, start_label=start_label,
                                        action_name='sequencer/execute_sequence')
         EmptySrvInterface(master=self, srv_name='sequencer/next', button=next_button)

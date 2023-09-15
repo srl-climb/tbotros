@@ -27,7 +27,7 @@ class SequencerNode(Node2):
         self.declare_parameter('gripper_transform_source', value = 'hold')
         self._gripper_transform_source = self.get_parameter('gripper_transform_source').get_parameter_value().string_value
 
-        self.declare_parameter('commands_file', '/home/climb/ros2_ws/commands/commands.pkl')
+        self.declare_parameter('commands_file', '/home/climb/ros2_ws/commands/commands0.pkl')
         self._commands_file = self.get_parameter('commands_file').get_parameter_value().string_value
         
         self._tbot: TbTetherbot = TbTetherbot.load(self._desc_file)
@@ -143,6 +143,7 @@ class SequencerNode(Node2):
     def execute_sequence_execute_callback(self, goal_handle: ServerGoalHandle):
 
         state = 0
+        current = 0
 
         while True:
             # initialize
@@ -155,6 +156,7 @@ class SequencerNode(Node2):
                     feedback.message = 'Start'
                     self.get_logger().info('Execute sequence: ' + feedback.message)    
                     self._next = False  
+                    current = goal_handle.request.start
                     state = 1
                 else:
                     goal_handle.abort()
@@ -163,14 +165,14 @@ class SequencerNode(Node2):
                     state = 99
             # start new action if auto or next is TRUE
             elif state == 1:
-                if not handlers:
+                if current == len(handlers):
                     current_handler = None
                     goal_handle.succeed()
                     feedback.message = 'Succeeded'
                     self.get_logger().info('Execute sequence: ' + feedback.message)
                     state = 99
                 elif handlers and (self._auto or self._next):
-                    current_handler = handlers.pop(0)
+                    current_handler = handlers[current]
                     feedback.message = 'Executing ' + current_handler.info()
                     self.get_logger().info('Execute sequence: ' + feedback.message)
                     state = 2
@@ -184,6 +186,7 @@ class SequencerNode(Node2):
                         feedback.message = current_handler.info().capitalize() + ' succeeded'
                         self.get_logger().info('Execute sequence: ' + feedback.message)
                         self._next = False
+                        current = current + 1
                         state = 1
                     elif status == TbHandler.CANCELED:
                         goal_handle.abort()
@@ -210,8 +213,8 @@ class SequencerNode(Node2):
                 state = 99
             # publish feedback
             if feedback.length > 0:
-                feedback.current = feedback.length - len(handlers)
-                feedback.progress = float((feedback.length - len(handlers)) / feedback.length)
+                feedback.current = current
+                feedback.progress = float((feedback.current / feedback.length))
                 goal_handle.publish_feedback(feedback)
             self._rate.sleep()
         with self._busy_lock:
@@ -252,7 +255,6 @@ class SequencerNode(Node2):
                         handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
                         handlers.append(TbMoveActionHandler(self._platform_move_client, command._targetposes))
                         handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
-                        handlers.append(TbDelayHandler(3))
                     # move arm
                     elif type(command) is CommandMoveArm:
                         handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
@@ -260,7 +262,6 @@ class SequencerNode(Node2):
                         handlers.append(TbMoveActionHandler(self._arm_move_client, command._targetposes))
                         handlers.append(TbEmptyServiceHandler(self._disable_arm_control_client))
                         handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
-                        handlers.append(TbDelayHandler(3))
                     # pick gripper
                     elif type(command) is CommandPickGripper:
                         handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
@@ -270,7 +271,6 @@ class SequencerNode(Node2):
                         handlers.append(TbEmptyActionHandler(self._docking_close_client))
                         handlers.append(TbEmptyActionHandler(self._gripper_open_clients[command._grip_idx])) 
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_transform_source_clients[command._grip_idx], 'arm'))  
-                        handlers.append(TbDelayHandler(3))
                     # place gripper
                     elif type(command) is CommandPlaceGripper:
                         handlers.append(TbEmptyActionHandler(self._gripper_close_clients[command._grip_idx]))
@@ -281,7 +281,6 @@ class SequencerNode(Node2):
                         handlers.append(TbTensionServiceHandler(self._tension_tethers_client, command._grip_idx, 1))
                         handlers.append(TbDelayHandler(3))
                         handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
-                        handlers.append(TbDelayHandler(3))
                     else:
                         pass
 

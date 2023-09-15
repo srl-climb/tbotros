@@ -176,6 +176,7 @@ class App(tk.Tk):
     
     def destroy(self, *_):
         
+        self.close_windows_callback()
         self.node.destroy_node()
 
         super().destroy()

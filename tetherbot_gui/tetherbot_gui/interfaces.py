@@ -15,7 +15,7 @@ from threading import Thread, Event, Lock
 from time import sleep
 from .interface_queue import InterfaceQueue
 from .tkinter_objects import TkBoolLabel, TkArrayLabel, TkButton, TkStringLabel, TkEntry, TkCancelButton, \
-    TkActionStatusLabel, TkFloatLabel, TkOptionMenu, TkFloatEntry, TkPoseLabelFrame, TkPoseEntryFrame
+    TkActionStatusLabel, TkFloatLabel, TkOptionMenu, TkFloatEntry, TkPoseLabelFrame, TkPoseEntryFrame, TkUIntEntry
 
 if TYPE_CHECKING:
     from .window import Window
@@ -604,16 +604,20 @@ class EmptyActionInterface(ActionInterface[EmptyAction, EmptyAction.Goal, EmptyA
 
 class ExecuteSequenceActionInterface(ActionInterface[ExecuteSequence, ExecuteSequence.Goal, ExecuteSequence.Result, ExecuteSequence.Feedback]):
 
-    def __init__(self, progress_label: TkStringLabel = None, message_label: TkStringLabel = None, **kwargs):
+    def __init__(self, progress_label: TkStringLabel = None, message_label: TkStringLabel = None, start_label: TkUIntEntry = None, **kwargs):
         
         super().__init__(action_type=ExecuteSequence, **kwargs)
 
         self.progress_label = progress_label
         self.message_label = message_label
+        self.start_label = start_label
 
     def get_goal(self) -> ExecuteSequence.Goal:
+
+        goal = ExecuteSequence.Goal()
+        goal.start = self.start_label.get_data()
         
-        return ExecuteSequence.Goal()
+        return goal
     
     def reset_labels(self) -> None:
         

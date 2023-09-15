@@ -4,6 +4,7 @@ import tkinter as tk
 from typing import Callable
 from geometry_msgs.msg import Pose
 from tbotlib import TransformMatrix
+from .tkinter_tooltip import TkToolTip
 
 class TkTimer():
     # A class representing a Tkinter-based timer
@@ -30,6 +31,35 @@ class TkEntry(tk.Entry):
         return self.get()
 
 
+class TkUIntEntry(TkEntry):
+
+    def __init__(self, **args):
+
+        super().__init__(validate='focusout', validatecommand=self.validate_command, invalidcommand=self.invalid_command, **args)
+
+        self.configure(justify='center')
+        self.insert(0, str(0))
+
+    def validate_command(self):
+        
+        value = self.get()
+        try:
+            if int(value) < 0:
+                return False
+            return True
+        except ValueError:
+            return False
+    
+    def invalid_command(self):
+
+        self.delete(0, tk.END)
+        self.insert(0, str(0))
+
+    def get_data(self) -> int:
+
+        return int(self.get())
+
+
 class TkFloatEntry(TkEntry):
 
     def __init__(self, max_val: float = float('inf'), min_val: float = -float('inf'), default_val: float = 0, **args):
@@ -45,6 +75,7 @@ class TkFloatEntry(TkEntry):
         self.insert(0, str(self.default_val))
 
     def validate_command(self):
+        
         value = self.get()
         if self.is_float(value) and self.min_val <= float(value) <= self.max_val:
             return True
@@ -52,6 +83,7 @@ class TkFloatEntry(TkEntry):
             return False
     
     def invalid_command(self):
+        
         value = self.get()
         if self.is_float(value):
             value = max(min(self.max_val, float(value)), self.min_val)
@@ -85,15 +117,23 @@ class TkLabel(tk.Label):
     
 class TkStringLabel(TkLabel):
 
-    def __init__(self, **kwargs):
+    def __init__(self, enable_tooltip: bool = False, **kwargs):
 
         super().__init__(relief="sunken", **kwargs)
 
         self.config(width=15, height=1)
 
+        self._enable_tooltip = enable_tooltip
+
+        if self._enable_tooltip:
+            self._tooltip = TkToolTip(self, '')
+        
     def update_data(self, value):
         
         self.config(text = str(value))
+
+        if self._enable_tooltip:
+            self._tooltip.text = str(value)
 
 
 class TkFloatLabel(TkLabel):
