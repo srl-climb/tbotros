@@ -36,5 +36,9 @@ def generate_launch_description():
     executables.append(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('tetherbot_control'), 'launch', 'tetherbot_control.launch.py'))))
+
+    executables.append(IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('tetherbot_optitrack'), 'launch', 'optitrack_tf.launch.py'))))
     
     return LaunchDescription(executables)
