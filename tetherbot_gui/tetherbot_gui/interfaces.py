@@ -8,7 +8,7 @@ from rclpy.action.client import ClientGoalHandle
 from std_msgs.msg import Bool, String, Float64, Int16, Int8
 from std_srvs.srv import Empty as EmptySrv, Trigger
 from geometry_msgs.msg import PoseStamped, Pose
-from custom_msgs.msg import Statusword, MotorPosition, DigitalInputs, Float64Array, BoolArray
+from custom_msgs.msg import Statusword, MotorPosition, DigitalInputs, Float64Array, BoolArray, Float64Stamped, Int16Stamped
 from custom_srvs.srv import SetString, Tension, SerialSend
 from custom_actions.action import ExecuteSequence, MoveMotor, Empty as EmptyAction, PlanTetherbot
 from threading import Thread, Event, Lock
@@ -112,6 +112,19 @@ class Float64MsgInterface(MsgInterface[Float64]):
         self.queue.put(self.label, self.msg.data)
 
 
+class Float64StampedMsgInterface(MsgInterface[Float64Stamped]):
+
+    def __init__(self, label: TkFloatLabel, **kwargs):
+
+        super().__init__(msg_type=Float64Stamped, **kwargs)
+
+        self.label = label
+
+    def enqueue_message(self):
+
+        self.queue.put(self.label, self.msg.data)
+
+
 class Int8MsgInterface(MsgInterface[Int8]):
 
     def __init__(self, label: TkFloatLabel, **kwargs):
@@ -130,6 +143,19 @@ class Int16MsgInterface(MsgInterface[Int16]):
     def __init__(self, label: TkFloatLabel, **kwargs):
 
         super().__init__(msg_type=Int16, **kwargs)
+
+        self.label = label
+
+    def enqueue_message(self):
+
+        self.queue.put(self.label, self.msg.data)
+
+
+class Int16StampedMsgInterface(MsgInterface[Int16Stamped]):
+
+    def __init__(self, label: TkFloatLabel, **kwargs):
+
+        super().__init__(msg_type=Int16Stamped, **kwargs)
 
         self.label = label
 

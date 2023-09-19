@@ -7,10 +7,10 @@ from rclpy.action import CancelResponse, GoalResponse
 from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from threading import Lock
-from custom_msgs.msg import MotorPosition
+from custom_msgs.msg import Float64Stamped
 from custom_actions.action import MoveTetherbot
 from std_srvs.srv import Empty
-from std_msgs.msg import Bool, Int8, Float64
+from std_msgs.msg import Bool, Int8
 from geometry_msgs.msg import Pose, PoseStamped
 from tbotlib import TbTetherbot
 from .tetherbot_control_base_node import BaseNode
@@ -45,7 +45,7 @@ class BaseControllerNode(BaseNode):
         self._control_enabled_pub = self.create_publisher(Bool, self.get_name() + '/control_enabled', 1)
         self._csp_target_position_pubs: list[Publisher] = []
         for name in default_motor_node_names:
-            self._csp_target_position_pubs.append(self.create_publisher(Float64, name + '/csp_target_position', 1))
+            self._csp_target_position_pubs.append(self.create_publisher(Float64Stamped, name + '/csp_target_position', 1))
 
         # subscriptions
         self._motor_modes: list[int] = []
@@ -90,6 +90,8 @@ class BaseControllerNode(BaseNode):
             msg = PoseStamped()
         else:
             msg = PoseStamped()
+            msg.header.frame_id = 'map'
+            msg.header.stamp = self.get_clock().now().to_msg()
             msg.pose = self._target_pose
         self._target_pose_pub.publish(msg)
 
@@ -109,10 +111,10 @@ class BaseControllerNode(BaseNode):
             target_positions = self.control_function(self._target_pose)
 
             # publish target positions to the motors
+            msg = Float64Stamped()
             for csp_target_position_pub, q in zip(self._csp_target_position_pubs, target_positions):
-                msg = Float64()
                 msg.data = q
-
+                msg.stamp = self.get_clock().now().to_msg()
                 csp_target_position_pub.publish(msg)
 
     def watchdog_loop(self):

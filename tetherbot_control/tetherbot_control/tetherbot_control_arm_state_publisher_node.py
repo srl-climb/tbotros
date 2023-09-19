@@ -5,7 +5,7 @@ import rclpy.time
 import numpy as np
 from tbotlib import TbTetherbot
 from geometry_msgs.msg import TransformStamped, PoseStamped
-from custom_msgs.msg import MotorPosition, Float64Array
+from custom_msgs.msg import Float64Stamped, Float64Array
 from .tetherbot_control_base_state_publisher_node import BaseStatePublisherNode
 
 class ArmStatePublisherNode(BaseStatePublisherNode):
@@ -21,7 +21,7 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         
         # subscriptions
         for i in range(3):
-            self.create_subscription(MotorPosition, 'motor' + str(i) + '/position', lambda msg, i=i: self.motor_position_sub_callback(msg, i), 1)
+            self.create_subscription(Float64Stamped, 'motor' + str(i) + '/position', lambda msg, i=i: self.motor_position_sub_callback(msg, i), 1)
         # publishers
         self._pose_pub = self.create_publisher(PoseStamped, self.get_name() + '/pose', 1)
         self._joint_states_pub = self.create_publisher(Float64Array, self.get_name() + '/joint_states', 1)
@@ -77,9 +77,9 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
             pose.pose.orientation.z = tf.transform.rotation.z
         self._pose_pub.publish(pose)
 
-    def motor_position_sub_callback(self, msg: MotorPosition, i: int):
+    def motor_position_sub_callback(self, msg: Float64Stamped, i: int):
 
-        self._joint_states[i] = msg.actual_position
+        self._joint_states[i] = msg.data
 
     
 def main(args = None):

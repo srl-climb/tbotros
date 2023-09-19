@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from .tkinter_objects import TkLabelFrame, TkLabel, TkBoolLabel, TkButton, TkStringLabel, \
     TkCancelButton, TkActionStatusLabel, TkPoseLabelFrame, TkArrayLabel, TkOptionMenu, TkFloatLabel
 from .interfaces import BoolMsgInterface, TensionSrvInterface, EmptySrvInterface, StringMsgInterface, TriggerSrvInterface, \
-    PoseStampedMsgInterface, SetStringSrvInterface, Float64ArrayMsgInterface, EmptyActionInterface, BoolArrayMsgInterface, Float64MsgInterface
+    PoseStampedMsgInterface, SetStringSrvInterface, Float64ArrayMsgInterface, EmptyActionInterface, BoolArrayMsgInterface, Float64StampedMsgInterface
 from .window import Window
 
 if TYPE_CHECKING:
@@ -66,7 +66,7 @@ class PlatformWindow(Window):
         label = TkFloatLabel(master=state_frame, digits=3)
         label.grid(row=6, column=1)
 
-        Float64MsgInterface(master=self, msg_name=self.master.tbot.platform.name + '/platform_state_publisher/stability', label=label)
+        Float64StampedMsgInterface(master=self, msg_name=self.master.tbot.platform.name + '/platform_state_publisher/stability', label=label)
 
         service_frame = TkLabelFrame(master=self, text='Services')
         service_frame.grid(row=1, column=0)

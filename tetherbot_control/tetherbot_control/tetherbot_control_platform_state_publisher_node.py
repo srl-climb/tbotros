@@ -7,9 +7,10 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from std_srvs.srv import Trigger
 from std_msgs.msg import String, Float64
+from custom_msgs.msg import Float64Stamped
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from zed_interfaces.srv import SetPose
-from custom_msgs.msg import Float64Array, MotorPosition
+from custom_msgs.msg import Float64Array, Float64Stamped
 from custom_srvs.srv import SetString
 from .tetherbot_control_base_state_publisher_node import BaseStatePublisherNode
 from tbotlib import TbTetherbot, TransformMatrix
@@ -44,7 +45,7 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         self.create_subscription(PoseStamped, '/zedm/zed_node/pose', self.zed_pose_sub_callback, 1)
         self.create_subscription(PoseStamped, '/optitrack/pose_publisher/platform_pose', self.optitrack_pose_sub_callback, 1)
         for i in range(self._tbot.m):
-            self.create_subscription(MotorPosition, 'motor' + str(i) + '/position', lambda msg, i=i: self.motor_position_sub_callback(msg, i), 1)
+            self.create_subscription(Float64Stamped, 'motor' + str(i) + '/position', lambda msg, i=i: self.motor_position_sub_callback(msg, i), 1)
         for i in range(self._tbot.k):
             self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg, i=i: self.gripper_pose_sub_callback(msg, i), 1)
 
@@ -52,7 +53,7 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         self._pose_pub = self.create_publisher(PoseStamped, self.get_name() + '/pose', 1)
         self._transform_source_pub = self.create_publisher(String, self.get_name() + '/transform_source', 1)
         self._joint_states_pub = self.create_publisher(Float64Array, self.get_name() + '/joint_states', 1)
-        self._stability_pub = self.create_publisher(Float64, self.get_name() + '/stability', 1)
+        self._stability_pub = self.create_publisher(Float64Stamped, self.get_name() + '/stability', 1)
 
         # services
         self.create_service(SetString, self.get_name() + '/set_transform_source', self.set_transform_source_callback)
@@ -124,7 +125,8 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
 
     def slow_timer_callback(self):
 
-        msg = Float64()
+        msg = Float64Stamped()
+        msg.stamp = self.get_clock().now().to_msg()
         try:
             msg.data = float(self._tbot.stability()[0])
         except:
@@ -136,9 +138,9 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
 
         self._tbot.grippers[i].T_local = TransformMatrix(self.pose2mat(msg.pose))
 
-    def motor_position_sub_callback(self, msg: MotorPosition, i: int):
+    def motor_position_sub_callback(self, msg: Float64Stamped, i: int):
 
-        self._joint_states[i] = msg.actual_position
+        self._joint_states[i] = msg.data
 
     def zed_pose_sub_callback(self, msg: PoseStamped):
             

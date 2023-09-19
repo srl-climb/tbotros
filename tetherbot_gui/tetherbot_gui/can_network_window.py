@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from .tkinter_objects import TkOptionMenu, TkLabelFrame, TkLabel, TkBoolLabel, TkStringLabel, TkButton, TkFloatEntry, \
     TkCancelButton, TkActionStatusLabel, TkScrollFrame, TkFloatLabel
-from .interfaces import Float64MsgInterface, Int16MsgInterface, TriggerSrvInterface, MoveMotorActionInterface, \
-    StatuswordMsgInterface, MotorPositionInterface, DigitalInputsMsgInterface, StringMsgInterface
+from .interfaces import TriggerSrvInterface, MoveMotorActionInterface, \
+    StatuswordMsgInterface, DigitalInputsMsgInterface, StringMsgInterface, Float64StampedMsgInterface, Int16StampedMsgInterface
 from .window import Window
 
 if TYPE_CHECKING:
@@ -171,28 +171,28 @@ class CanNetworkWindow(Window):
             actual_position_label = TkFloatLabel(master=state_frame)
             actual_position_label.grid(row=2, column=1)
 
+            Float64StampedMsgInterface(master=state_frame, msg_name=motor_namespace + '/faulhaber_motor/position', label=actual_position_label)
+
             label = TkLabel(master=state_frame, text="Target Position [m; deg]:")
             label.grid(row=3, column=0)
             target_postion_label = TkFloatLabel(master=state_frame)
             target_postion_label.grid(row=3, column=1)
 
-            MotorPositionInterface(master=self, msg_name = motor_namespace + '/faulhaber_motor/position',
-                                   target_position_label=target_postion_label,
-                                   actual_position_label=actual_position_label)
+            Float64StampedMsgInterface(master=state_frame, msg_name=motor_namespace + '/faulhaber_motor/target_position', label=target_postion_label)
 
             label = TkLabel(master=state_frame, text="Velocity [m/s; deg/s]:")
             label.grid(row=4, column=0)
             velocity_label = TkFloatLabel(master=state_frame)
             velocity_label.grid(row=4, column=1)
             
-            Float64MsgInterface(master=self, msg_name = motor_namespace + '/faulhaber_motor/velocity', label=velocity_label)
+            Float64StampedMsgInterface(master=self, msg_name = motor_namespace + '/faulhaber_motor/velocity', label=velocity_label)
 
             label = TkLabel(master=state_frame, text="Current [mA]:")
             label.grid(row=5, column=0)
             current_label = TkFloatLabel(master=state_frame)
             current_label.grid(row=5, column=1)
             
-            Int16MsgInterface(master=self, msg_name = motor_namespace + '/faulhaber_motor/current', label=current_label)
+            Int16StampedMsgInterface(master=self, msg_name = motor_namespace + '/faulhaber_motor/current', label=current_label)
 
             input_frame = TkLabelFrame(master=state_frame, text='Inputs')
             input_frame.grid(row = 6 , column = 0, columnspan=2)
