@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import rclpy
 import rclpy.time
+import numpy as np
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from std_srvs.srv import Trigger
@@ -171,19 +172,20 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
                 if self._set_pose_cli.service_is_ready():
                     start_time = self.get_clock().now().seconds_nanoseconds()[0]
                     cli_request = SetPose.Request()
-                    T = TransformMatrix([self._zed_pose.pose.position.x,
-                                         self._zed_pose.pose.position.y,
-                                         self._zed_pose.pose.position.z,
-                                         self._zed_pose.pose.orientation.w,
-                                         self._zed_pose.pose.orientation.x,
-                                         self._zed_pose.pose.orientation.y,
-                                         self._zed_pose.pose.orientation.z])
-                    cli_request.pos = T.decompose()[:3]
-                    cli_request.orient = T.decompose()[3:]
+                    T = TransformMatrix([self._optitrack_pose.pose.position.x,
+                                         self._optitrack_pose.pose.position.y,
+                                         self._optitrack_pose.pose.position.z,
+                                         self._optitrack_pose.pose.orientation.w,
+                                         self._optitrack_pose.pose.orientation.x,
+                                         self._optitrack_pose.pose.orientation.y,
+                                         self._optitrack_pose.pose.orientation.z])
+                    cli_request.pos = T.decompose()[:3].astype(float).tolist()
+                    cli_request.orient = np.radians(T.decompose()[3:]).astype(float).tolist()
 
                     future = self._set_pose_cli.call_async(cli_request)
                     state = 2
-                state = 1
+                else:
+                    state = 1
 
             # wait for results
             elif state == 2:
