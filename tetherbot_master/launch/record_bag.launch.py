@@ -79,9 +79,13 @@ def generate_launch_description():
               '/gripper2/gripper_state_publisher/hold_name',
               '/gripper3/gripper_state_publisher/hold_name',
               '/gripper4/gripper_state_publisher/hold_name',
-              '/mocap_optitrack/markers',
-              '/mocap_optitrack/rigid_bodies']
+              '/zedm/zed_node/pose',
+              '/optitrack/markers',
+              '/optitrack/rigid_bodies']
     
     bag_file =  os.path.expanduser('~') + '/ros2_ws/bag/' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '/'
 
     return LaunchDescription([ExecuteProcess(cmd=['ros2', 'bag', 'record', '-o', bag_file ] + topics, output="screen")])
+
+
+
