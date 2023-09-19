@@ -45,7 +45,7 @@ class BaseControllerNode(BaseNode):
         self._control_enabled_pub = self.create_publisher(Bool, self.get_name() + '/control_enabled', 1)
         self._csp_target_position_pubs: list[Publisher] = []
         for name in default_motor_node_names:
-            self._csp_target_position_pubs.append(self.create_publisher(Float64, name + '/csp_target_position', 100))
+            self._csp_target_position_pubs.append(self.create_publisher(Float64, name + '/csp_target_position', 1))
 
         # subscriptions
         self._motor_modes: list[int] = []
