@@ -14,7 +14,7 @@ from tbotlib import TbTetherbot
 # https://github.com/ros-planning/navigation2/blob/main/nav2_bringup/launch/multi_tb3_simulation_launch.py
 
 enable_tf = True
-enable_zed = False 
+enable_zed = True 
 enable_cameras = False
 enable_motors = True
 enable_servos = True
@@ -63,7 +63,7 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('zed_wrapper'), 'launch/include', 'zed_camera.launch.py')),
             launch_arguments = {'camera_model': 'zedm', 
                                 'config': os.path.join(config_path, 'zedm.yaml'),
-                                'cam_pose': '[-0.27645,0,0.15625,0,3.14159,0]', #tbot.platform.depthsensor.T_local.decompose()
+                                'cam_pose': '[-0.27645,0,0.14625,0,3.14159,0]', #tbot.platform.depthsensor.T_local.decompose()
                                }.items()))
         # NOTE: The pose of the zed camera can be accessed via the pose topic.
         #       The pose refers to the base_link of the camera (see the urdf file of the zedm in the zed_wrapper package)
