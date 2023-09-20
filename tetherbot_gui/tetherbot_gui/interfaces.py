@@ -8,7 +8,7 @@ from rclpy.action.client import ClientGoalHandle
 from std_msgs.msg import Bool, String, Float64, Int16, Int8
 from std_srvs.srv import Empty as EmptySrv, Trigger
 from geometry_msgs.msg import PoseStamped, Pose
-from custom_msgs.msg import Statusword, MotorPosition, DigitalInputs, Float64Array, BoolArray, Float64Stamped, Int16Stamped
+from custom_msgs.msg import Statusword, DigitalInputs, Float64Array, BoolArray, Float64Stamped, Int16Stamped
 from custom_srvs.srv import SetString, Tension, SerialSend
 from custom_actions.action import ExecuteSequence, MoveMotor, Empty as EmptyAction, PlanTetherbot
 from threading import Thread, Event, Lock
@@ -233,20 +233,6 @@ class DigitalInputsMsgInterface(MsgInterface[DigitalInputs]):
         self.queue.put(self.negative_limit_switch_label, self.msg.negative_limit_switch)
         self.queue.put(self.positive_limit_switch_label, self.msg.positive_limit_switch)
         self.queue.put(self.homing_switch_label, self.msg.homing_switch)
-
-class MotorPositionInterface(MsgInterface[MotorPosition]):
-    
-    def __init__(self, target_position_label: TkFloatLabel, actual_position_label: TkFloatLabel, **kwargs):
-
-        super().__init__(msg_type=MotorPosition, **kwargs)
-
-        self.target_position_label = target_position_label
-        self.actual_position_label = actual_position_label
-
-    def enqueue_message(self):
-        
-        self.queue.put(self.target_position_label, self.msg.target_position)
-        self.queue.put(self.actual_position_label, self.msg.actual_position)
 
 
 class StatuswordMsgInterface(MsgInterface[Statusword]):
