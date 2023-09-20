@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import rclpy
 import rclpy.time
-import numpy as np
 from tbotlib import TbTetherbot
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, TransformStamped
 from custom_msgs.msg import BoolArray
 from builtin_interfaces.msg import Time
@@ -20,7 +19,7 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
         self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
         
         # publishers
-        self.tether_line_pub = self.create_publisher(Marker, self.get_name() + '/tether_line', 1)
+        self.tether_line_pub = self.create_publisher(MarkerArray, self.get_name() + '/tether_line', 1)
         # subscribers
         self.create_subscription(BoolArray, '/' + self._tbot.platform.name + '/platform_controller/tether_tension', self.tether_tension_sub_callback, 1)
         # timers
@@ -32,14 +31,8 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
 
         time = self.get_clock().now().seconds_nanoseconds()
 
-        lines = Marker(type = Marker.LINE_LIST)
-        lines.header.frame_id = 'map'
-        lines.header.stamp = Time(sec = time[0], nanosec = time[1])
-        lines.scale.x = 0.002
-        lines.scale.y = 0.002
-        
-
         try:
+            lines = MarkerArray()
             for tether, tension in zip(self._tbot.tethers, self._tether_tension):
                 p1 = Point()
                 p2 = Point()
@@ -58,15 +51,23 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
                 p2.y = transform.transform.translation.y
                 p2.z = transform.transform.translation.z
 
+
+                line = Marker(type = Marker.LINE_LIST)
+                line.header.frame_id = 'map'
+                line.header.stamp = Time(sec = time[0], nanosec = time[1])
+                line.scale.x = 0.002
+                line.scale.y = 0.002
+                line.points.append(p1)
+                line.points.append(p2)
+
                 if tension:
-                    color = [0.0,1.0,0.0,1.0]
+                    line.color.g = 1.0
+                    line.color.a = 1.0
                 else:
-                    color = [1.0,0.0,0.0,1.0]
-                # color is list of rgba as floats
+                    line.color.r = 1.0
+                    line.color.a = 0.0               
                 
-                lines.points.append(p1)
-                lines.points.append(p2)
-                lines.colors.append(color)
+                lines.markers.append(line)
 
             self.tether_line_pub.publish(lines)
         
