@@ -19,7 +19,7 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
         self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
         
         # publishers
-        self.tether_line_pub = self.create_publisher(MarkerArray, self.get_name() + '/tether_line', 1)
+        self.tether_line_pub = self.create_publisher(MarkerArray, self.get_name() + '/tether_lines', 1)
         # subscribers
         self.create_subscription(BoolArray, '/' + self._tbot.platform.name + '/platform_controller/tether_tension', self.tether_tension_sub_callback, 1)
         # timers
@@ -53,6 +53,7 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
 
 
                 line = Marker(type = Marker.LINE_LIST)
+                line.ns = tether.name
                 line.header.frame_id = 'map'
                 line.header.stamp = Time(sec = time[0], nanosec = time[1])
                 line.scale.x = 0.002
@@ -65,7 +66,7 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
                     line.color.a = 1.0
                 else:
                     line.color.r = 1.0
-                    line.color.a = 0.0               
+                    line.color.a = 1.0               
                 
                 lines.markers.append(line)
 
