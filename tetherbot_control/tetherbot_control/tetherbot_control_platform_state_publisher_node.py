@@ -93,8 +93,19 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
             pose.pose.orientation.x = q[1]
             pose.pose.orientation.y = q[2]
             pose.pose.orientation.z = q[3]
+        
+        # 2d mode
         if self._mode_2d:
+            pose_array = TransformMatrix(self.pose2mat(pose.pose)).decompose()
+            pose_array[3] = 0 # set x rotation to 0
+            pose_array[4] = 0 # set y rotation to 0
+            pose_matrix = TransformMatrix(pose_array)
+
             pose.pose.position.z = float(self._fixed_z_value)
+            pose.pose.orientation.w = pose_matrix.q[0]
+            pose.pose.orientation.x = pose_matrix.q[1]
+            pose.pose.orientation.y = pose_matrix.q[2]
+            pose.pose.orientation.z = pose_matrix.q[3]
 
         # publish pose
         pose.header.stamp = self.get_clock().now().to_msg()
