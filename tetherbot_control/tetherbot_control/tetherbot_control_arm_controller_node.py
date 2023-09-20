@@ -15,8 +15,6 @@ class ArmControllerNode(BaseControllerNode):
 
         super().__init__(node_name = 'arm_controller', default_motor_node_names = ['motor10/faulhaber_motor', 'motor11/faulhaber_motor', 'motor12/faulhaber_motor'])
 
-        self.declare_parameter('update_platform_pose_during_control', False)
-        self._update_platform_pose_during_control = self.get_parameter('update_platform_pose_during_control').get_parameter_value().bool_value
         self.create_subscription(PoseStamped, self._tbot.platform.name + '/platform_state_publisher/pose', self.platform_pose_sub_callback, 1)
 
     def control_function(self, target_pose: Pose) -> np.ndarray:
@@ -29,10 +27,7 @@ class ArmControllerNode(BaseControllerNode):
     
     def platform_pose_sub_callback(self, msg: PoseStamped):
 
-        if self._control_enabled and not self._update_platform_pose_during_control:
-            pass
-        else:
-            self._tbot.platform.T_local = TransformMatrix(self.pose2mat(msg.pose))
+        self._tbot.platform.T_local = TransformMatrix(self.pose2mat(msg.pose))
     
 
 def main(args = None):

@@ -37,18 +37,16 @@ class PlatformControllerNode(BaseControllerNode):
         for gripper in self._tbot.grippers:
             gripper.parent = self._tbot
 
-        # service for tensioning a grippers' tethers
+        # services
         self.create_service(Tension, self.get_name() + '/tension_gripper_tethers', self.tension_gripper_tethers_srv_callback)
-
-        # publisher for tethers tension
+        # publishers
         self._tether_tension_pub = self.create_publisher(BoolArray, self.get_name() + '/tether_tension', 1)
+        # timers
         self.create_timer(0.5, self.pub_timer)
-
-        # subscription to gripper poses
+        # subscriptions
         for i in range(self._tbot.k):
             self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg, i=i: self.gripper_pose_sub_callback(msg, i), 1)
-
-        # actions for calibration of the tether lengths
+        # actions
         self.create_action_server(EmptyAction, self.get_name() + '/calibrate_tether_lengths', 
                                   execute_callback = self.calibrate_tether_lengths_execute_callback,
                                   cancel_callback = self.calibrate_tether_lengths_cancel_callback,
