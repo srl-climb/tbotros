@@ -22,7 +22,7 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
         # publishers
         self.tether_line_pub = self.create_publisher(Marker, self.get_name() + '/tether_line', 1)
         # subscribers
-        self.create_subscription(BoolArray, self.get_name() + '/tether_tension', self.tether_tension_sub_callback, 1)
+        self.create_subscription(BoolArray, '/' + self._tbot.platform.name + '/platform_controller/tether_tension', self.tether_tension_sub_callback, 1)
         # timers
         self.create_timer(0.1, self.timer_callback)
 
@@ -35,9 +35,10 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
         lines = Marker(type = Marker.LINE_LIST)
         lines.header.frame_id = 'map'
         lines.header.stamp = Time(sec = time[0], nanosec = time[1])
-        lines.scale.x = 0.001
-        lines.scale.y = 0.001
+        lines.scale.x = 0.002
+        lines.scale.y = 0.002
         
+
         try:
             for tether, tension in zip(self._tbot.tethers, self._tether_tension):
                 p1 = Point()
@@ -58,9 +59,10 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
                 p2.z = transform.transform.translation.z
 
                 if tension:
-                    color = [0,1,0,1]
+                    color = [0.0,1.0,0.0,1.0]
                 else:
-                    color = [1,0,0,1]
+                    color = [1.0,0.0,0.0,1.0]
+                # color is list of rgba as floats
                 
                 lines.points.append(p1)
                 lines.points.append(p2)
