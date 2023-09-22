@@ -15,29 +15,21 @@ class ArmControllerNode(BaseControllerNode):
 
         super().__init__(node_name = 'arm_controller', default_motor_node_names = ['motor10/faulhaber_motor', 'motor11/faulhaber_motor', 'motor12/faulhaber_motor'])
 
-        self.create_subscription(PoseStamped, self._tbot.platform.name + '/platform_state_publisher/pose', self.platform_pose_sub_callback, 1)
-
     def control_function(self, target_pose: Pose) -> np.ndarray:
 
         # calculate joint states (deg, m, m)
         qs = self._tbot.platform.arm.ivk(TransformMatrix(self.pose2mat(target_pose)))
         qs[0] = qs[0] * (180/np.pi)                                               
         
-        return qs
-    
-    def platform_pose_sub_callback(self, msg: PoseStamped):
-
-        self._tbot.platform.T_local = TransformMatrix(self.pose2mat(msg.pose))
-    
+        return qs 
 
 def main(args = None):
 
     rclpy.init(args = args)
     try:
         node = ArmControllerNode()
-        executor = MultiThreadedExecutor()
         try:
-            rclpy.spin(node, executor = executor)
+            rclpy.spin(node, executor = MultiThreadedExecutor())
         finally:
             node.destroy_node()
     except KeyboardInterrupt:

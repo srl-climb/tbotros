@@ -44,7 +44,7 @@ class PosePublisherNode(Node):
             self.platform_pose_publisher.publish(msg)
 
         except TransformException:
-            self.get_logger().warning('Transformation from map to tbot_center not available!')
+            self.get_logger().warning('Transformation from map to tbot_center not available!', throttle_duration_sec = 3, skip_first = True)
 
 def main():
     rclpy.init()

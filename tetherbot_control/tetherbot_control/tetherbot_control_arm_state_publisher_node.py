@@ -26,7 +26,7 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         self._pose_pub = self.create_publisher(PoseStamped, self.get_name() + '/pose', 1)
         self._joint_states_pub = self.create_publisher(Float64Array, self.get_name() + '/joint_states', 1)
         # timer
-        self.create_timer(0.2, self.timer_callback)
+        self.create_timer(0.1, self.timer_callback)
 
     def timer_callback(self):
         
@@ -64,7 +64,7 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         try:  
             tf: TransformStamped = self._tf_buffer.lookup_transform(target_frame = 'map', source_frame = self._arm.links[2].name, time = rclpy.time.Time())
         except Exception as exc:
-            self.get_logger().warn('Look up transform failed: ' + str(exc))
+            self.get_logger().warn('Look up transform failed: ' + str(exc), skip_first = True, throttle_duration_sec = 3)
         else:   
             pose.header.frame_id = 'map'
             pose.header.stamp = tf.header.stamp

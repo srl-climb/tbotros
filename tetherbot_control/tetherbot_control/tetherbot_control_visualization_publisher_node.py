@@ -73,7 +73,7 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
             self.tether_line_pub.publish(lines)
         
         except Exception as exc:
-              self.get_logger().warn('Look up transform failed: ' + str(exc))
+              self.get_logger().warn('Look up transform failed: ' + str(exc), skip_first = True, throttle_duration_sec = 3)
 
     def tether_tension_sub_callback(self, msg: BoolArray):
 

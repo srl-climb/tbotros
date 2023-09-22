@@ -1,8 +1,7 @@
 from __future__ import annotations
-
 import numpy as np
-
 from rclpy.node import Publisher
+from rclpy.time import Time
 from rclpy.action import CancelResponse, GoalResponse
 from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
@@ -12,7 +11,7 @@ from custom_actions.action import MoveTetherbot
 from std_srvs.srv import Empty
 from std_msgs.msg import Bool, Int8
 from geometry_msgs.msg import Pose, PoseStamped
-from tbotlib import TbTetherbot
+from tbotlib import TbTetherbot, TransformMatrix
 from .tetherbot_control_base_node import BaseNode
 
 
@@ -22,14 +21,14 @@ class BaseControllerNode(BaseNode):
 
         super().__init__(**kwargs)
 
-        ### LOAD CONFIG ###
-
         # tbotlib object for kinematics
         self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
+        # by default the gripper parent is the hold, but we set it to the world/map
+        # this way T_local gets referenced to the world/map and not to the hold frame
+        for gripper in self._tbot.grippers:
+            gripper.parent = self._tbot
 
-        ### ROS OBJECTS ###
-
-        # action server
+        # actions
         self.create_action_server(MoveTetherbot, self.get_name() + '/move', 
                      execute_callback = self.execute_move_callback,
                      goal_callback = self.goal_move_callback,
@@ -49,29 +48,22 @@ class BaseControllerNode(BaseNode):
 
         # subscriptions
         self._motor_modes: list[int] = []
-        self._motor_runnings: list[bool] = []
+        self._motor_running_states: list[bool] = []
         for i in range(len(default_motor_node_names)):
             self._motor_modes.append(0)
-            self._motor_runnings.append(False)
+            self._motor_running_states.append(False)
             self.create_subscription(Bool, default_motor_node_names[i] + '/running', lambda msg, i=i: self.motor_running_callback(msg, i), 1)
-            self.create_subscription(Int8, default_motor_node_names[i] + '/mode', lambda msg, i=i: self.motor_mode_callaack(msg, i), 1)
-        self.create_subscription(PoseStamped, self.get_name() + '/actual_pose', self.actual_pose_callback, 1)
+            self.create_subscription(Int8, default_motor_node_names[i] + '/mode', lambda msg, i=i: self.motor_mode_callback(msg, i), 1)
 
-        # publisher timer
-        self.create_timer(0.2, self.publish_loop)
-
-        # control loop timer
-        self._control_loop_rate = 0.02 # in seconds
-        self.create_timer(self._control_loop_rate, self.control_loop, callback_group = MutuallyExclusiveCallbackGroup())
-
-        # watchdog loop
+        # timers
+        self.create_timer(0.02, self.control_loop, callback_group = MutuallyExclusiveCallbackGroup())
         self.create_timer(0.2, self.watchdog_loop)
 
         # rate for waiting and monitoring in the action server executor
-        self._rate = self.create_rate(10, self.get_clock())
+        self._move_action_rate = self.create_rate(10, self.get_clock())
 
         # lock for protecting execute_move_callback
-        self._lock = Lock()
+        self._move_action_lock = Lock()
 
         ### ADDITIONAL STUFF ###
 
@@ -84,22 +76,9 @@ class BaseControllerNode(BaseNode):
         self._target_pose_queue = []
         self._control_enabled = False
 
-    def publish_loop(self):
-
-        if self._target_pose is None:
-            msg = PoseStamped()
-        else:
-            msg = PoseStamped()
-            msg.header.frame_id = 'map'
-            msg.header.stamp = self.get_clock().now().to_msg()
-            msg.pose = self._target_pose
-        self._target_pose_pub.publish(msg)
-
-        msg = Bool()
-        msg.data = self._control_enabled
-        self._control_enabled_pub.publish(msg)
-
     def control_loop(self):
+
+        self.lookup_transforms()
 
         if self._control_enabled and self._target_pose is not None:
             
@@ -107,32 +86,58 @@ class BaseControllerNode(BaseNode):
             if self._target_pose_queue:
                 self._target_pose = self._target_pose_queue.pop(0)
 
-            # calculate target position of the motors
+            # calculate target positions of the motors
             target_positions = self.control_function(self._target_pose)
 
             # publish target positions to the motors
             msg = Float64Stamped()
+            stamp = self.get_clock().now().to_msg()
             for csp_target_position_pub, q in zip(self._csp_target_position_pubs, target_positions):
                 msg.data = q
-                msg.stamp = self.get_clock().now().to_msg()
+                msg.stamp = stamp
                 csp_target_position_pub.publish(msg)
+
+            # publish target pose
+            msg = PoseStamped()
+            msg.header.frame_id = 'map'
+            msg.header.stamp = stamp
+            msg.pose = self._target_pose
+            self._target_pose_pub.publish(msg)
 
     def watchdog_loop(self):
 
         if self._control_enabled:
-            if all(mode == 8 for mode in self._motor_modes) and all(self._motor_runnings):
+            if all(mode == 8 for mode in self._motor_modes) and all(self._motor_running_states):
                 pass
             else:
                 self.get_logger().warn('One or more motors stopped running/are in wrong mode, disabling control')
                 self._control_enabled = False
 
+        # publish control enable state
+        msg = Bool()
+        msg.data = self._control_enabled
+        self._control_enabled_pub.publish(msg)
+
     def control_function(self, target_pose: Pose) -> np.ndarray:
 
         pass
 
-    def actual_pose_callback(self, msg: PoseStamped):
+    def lookup_transforms(self):
 
-        self._actual_pose = msg.pose
+        try:
+            time = Time()
+            transform = self._tf_buffer.lookup_transform(source_frame = self._tbot.platform.name, 
+                                                         target_frame = 'map', 
+                                                         time = time).transform
+            self._tbot.platform.T_local = TransformMatrix(self.transform2mat(transform))
+            
+            for gripper in self._tbot.grippers:
+                transform = self._tf_buffer.lookup_transform(source_frame = gripper.name,
+                                                             target_frame = 'map',
+                                                             time = time).transform
+                gripper.T_local = TransformMatrix(self.transform2mat(transform))
+        except Exception as exc:
+            self.get_logger().error('Look up transform failed: ' + str(exc), throttle_duration_sec = 3, skip_first = True)
 
     def enable_control_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
         
@@ -151,9 +156,9 @@ class BaseControllerNode(BaseNode):
     
     def motor_running_callback(self, msg: Bool, i: int):
 
-        self._motor_runnings[i] = msg.data
+        self._motor_running_states[i] = msg.data
 
-    def motor_mode_callaack(self, msg: Int8, i: int):
+    def motor_mode_callback(self, msg: Int8, i: int):
 
         self._motor_modes[i] = msg.data
 
@@ -161,14 +166,14 @@ class BaseControllerNode(BaseNode):
         
         move_id = self.get_move_id()
 
-        with self._lock:
+        with self._move_action_lock:
             self.get_logger().info('Move [%s]: Start' %move_id)
        
             # execute state machine
             state = 0
             
             while True:
-                self._rate.sleep()
+                self._move_action_rate.sleep()
 
                 if state == 0:
                     self._target_pose_queue = self.array2poses(goal_handle.request.poses)
@@ -227,15 +232,15 @@ class BaseControllerNode(BaseNode):
         array = np.reshape(array, (-1,7))
         poses = []
 
-        for a in array:
+        for row in array:
             pose = Pose()
-            pose.position.x = a[0]
-            pose.position.y = a[1]
-            pose.position.z = a[2]
-            pose.orientation.w = a[3]
-            pose.orientation.x = a[4]
-            pose.orientation.y = a[5]
-            pose.orientation.z = a[6]
+            pose.position.x = row[0]
+            pose.position.y = row[1]
+            pose.position.z = row[2]
+            pose.orientation.w = row[3]
+            pose.orientation.x = row[4]
+            pose.orientation.y = row[5]
+            pose.orientation.z = row[6]
 
             poses.append(pose)
 

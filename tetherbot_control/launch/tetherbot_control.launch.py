@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import os
-import sys
-from launch import LaunchDescription, logging
+from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
-from ament_index_python.packages import get_package_prefix, get_package_share_directory
+from ament_index_python.packages import get_package_share_directory
 from tbotlib import TbTetherbot
 
 # LINKS:
@@ -63,7 +62,7 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('zed_wrapper'), 'launch/include', 'zed_camera.launch.py')),
             launch_arguments = {'camera_model': 'zedm', 
                                 'config': os.path.join(config_path, 'zedm.yaml'),
-                                'cam_pose': '[-0.27645,0,0.14625,0,3.14159,0]', #tbot.platform.depthsensor.T_local.decompose()
+                                'cam_pose': '[-0.27645,0,0.14625,0,3.14159,0]', 
                                }.items()))
         # NOTE: The pose of the zed camera can be accessed via the pose topic.
         #       The pose refers to the base_link of the camera (see the urdf file of the zedm in the zed_wrapper package)
@@ -140,8 +139,7 @@ def generate_launch_description():
                 package = 'tetherbot_control',
                 executable = 'tetherbot_control_gripper_state_publisher',
                 namespace = tbot.grippers[i].name,
-                remappings = [('/' + tbot.grippers[i].name + '/marker_pose', '/camera' + str(i) + '/aruco_detector/marker_pose'),
-                              ('/' + tbot.grippers[i].name + '/tf_static', '/tf_static'),
+                remappings = [('/' + tbot.grippers[i].name + '/tf_static', '/tf_static'),
                               ('/' + tbot.grippers[i].name + '/tf', '/tf')],
                 parameters = [{'config_file': os.path.join(config_path, 'tetherbot_light.pkl'),
                                'gripper_id': tbot.grippers[i].name,
@@ -190,8 +188,6 @@ def generate_launch_description():
                           ('/' + tbot.platform.arm.name + '/motor10/faulhaber_motor/mode', '/motor10/faulhaber_motor/mode'),
                           ('/' + tbot.platform.arm.name + '/motor11/faulhaber_motor/mode', '/motor11/faulhaber_motor/mode'),
                           ('/' + tbot.platform.arm.name + '/motor12/faulhaber_motor/mode', '/motor12/faulhaber_motor/mode'),
-                          ('/' + tbot.platform.arm.name + '/' + tbot.platform.name + '/platform_state_publisher/pose', '/' + tbot.platform.name + '/platform_state_publisher/pose'),
-                          ('/' + tbot.platform.arm.name + '/arm_controller/actual_pose', '/' + tbot.platform.arm.name + '/arm_state_publisher/pose'),
                           ('/' + tbot.platform.arm.name + '/tf_static', '/tf_static'),
                           ('/' + tbot.platform.arm.name + '/tf', '/tf')]
             ))
@@ -213,6 +209,8 @@ def generate_launch_description():
             executable='tetherbot_control_platform_state_publisher',
             parameters=[{'config_file': os.path.join(desc_path, 'tetherbot_light.pkl'), 
                          'mode_2d': True,
+                         'zed_frame': 'base_link',
+                         'optitrack_frame': 'tbot_center',
                          'fixed_z_value': float(tbot.platform.T_world.r[2])}],
             remappings = [('/' + tbot.platform.name + '/motor0/position', '/motor0/faulhaber_motor/position'),
                           ('/' + tbot.platform.name + '/motor1/position', '/motor1/faulhaber_motor/position'),
@@ -224,11 +222,6 @@ def generate_launch_description():
                           ('/' + tbot.platform.name + '/motor7/position', '/motor7/faulhaber_motor/position'),
                           ('/' + tbot.platform.name + '/motor8/position', '/motor8/faulhaber_motor/position'),
                           ('/' + tbot.platform.name + '/motor9/position', '/motor9/faulhaber_motor/position'),
-                          ('/' + tbot.platform.name + '/' + tbot.grippers[0].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[0].name + '/gripper_state_publisher/pose'),
-                          ('/' + tbot.platform.name + '/' + tbot.grippers[1].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[1].name + '/gripper_state_publisher/pose'),
-                          ('/' + tbot.platform.name + '/' + tbot.grippers[2].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[2].name + '/gripper_state_publisher/pose'),
-                          ('/' + tbot.platform.name + '/' + tbot.grippers[3].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[3].name + '/gripper_state_publisher/pose'),
-                          ('/' + tbot.platform.name + '/' + tbot.grippers[4].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[4].name + '/gripper_state_publisher/pose'),
                           ('/' + tbot.platform.name + '/set_pose', '/zedm/zed_node/set_pose'),
                           ('/' + tbot.platform.name + '/tf_static', '/tf_static'),
                           ('/' + tbot.platform.name + '/tf', '/tf')]
@@ -280,12 +273,6 @@ def generate_launch_description():
                         ('/' + tbot.platform.name + '/motor7/faulhaber_motor/mode', '/motor7/faulhaber_motor/mode'),
                         ('/' + tbot.platform.name + '/motor8/faulhaber_motor/mode', '/motor8/faulhaber_motor/mode'),
                         ('/' + tbot.platform.name + '/motor9/faulhaber_motor/mode', '/motor9/faulhaber_motor/mode'),
-                        ('/' + tbot.platform.name + '/' + tbot.grippers[0].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[0].name + '/gripper_state_publisher/pose'),
-                        ('/' + tbot.platform.name + '/' + tbot.grippers[1].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[1].name + '/gripper_state_publisher/pose'),
-                        ('/' + tbot.platform.name + '/' + tbot.grippers[2].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[2].name + '/gripper_state_publisher/pose'),
-                        ('/' + tbot.platform.name + '/' + tbot.grippers[3].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[3].name + '/gripper_state_publisher/pose'),
-                        ('/' + tbot.platform.name + '/' + tbot.grippers[4].name + '/gripper_state_publisher/pose', '/' + tbot.grippers[4].name + '/gripper_state_publisher/pose'),
-                        ('/' + tbot.platform.name + '/platform_controller/actual_pose', '/' + tbot.platform.name + '/platform_state_publisher/pose'),
                         ('/' + tbot.platform.name + '/tf_static', '/tf_static'),
                         ('/' + tbot.platform.name + '/tf', '/tf')]
             ))

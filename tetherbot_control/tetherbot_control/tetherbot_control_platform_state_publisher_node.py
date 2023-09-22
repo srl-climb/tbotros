@@ -25,6 +25,8 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         self.declare_parameter('default_transform_source', 'optitrack')
         self.declare_parameter('mode_2d', True)
         self.declare_parameter('fixed_z_value', 0.068)
+        self.declare_parameter('optitrack_frame', 'none')
+        self.declare_parameter('zed_frame', 'none')
 
         # set parameters
         self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
@@ -34,6 +36,8 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         self._transform_source = None
         self._mode_2d = self.get_parameter('mode_2d').get_parameter_value().bool_value
         self._fixed_z_value = self.get_parameter('fixed_z_value').get_parameter_value().double_value
+        self._zed_frame = self.get_parameter('zed_frame').get_parameter_value().string_value
+        self._optitrack_frame = self.get_parameter('optitrack_frame').get_parameter_value().string_value
         self.set_transform_source(self.get_parameter('default_transform_source').get_parameter_value().string_value)
         
         # by default the gripper parent is the hold, but we set it to the world/map
@@ -42,12 +46,8 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
             gripper.parent = self._tbot
 
         # subscriptions
-        self.create_subscription(PoseStamped, '/zedm/zed_node/pose', self.zed_pose_sub_callback, 1)
-        self.create_subscription(PoseStamped, '/optitrack/pose_publisher/platform_pose', self.optitrack_pose_sub_callback, 1)
         for i in range(self._tbot.m):
             self.create_subscription(Float64Stamped, 'motor' + str(i) + '/position', lambda msg, i=i: self.motor_position_sub_callback(msg, i), 1)
-        for i in range(self._tbot.k):
-            self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg, i=i: self.gripper_pose_sub_callback(msg, i), 1)
 
         # publishers
         self._pose_pub = self.create_publisher(PoseStamped, self.get_name() + '/pose', 1)
@@ -63,7 +63,7 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         self._set_pose_cli = self.create_client(SetPose, 'set_pose', callback_group = ReentrantCallbackGroup())
 
         # timer
-        self.create_timer(0.2, self.timer_callback)
+        self.create_timer(0.1, self.timer_callback)
         self.create_timer(0.5, self.slow_timer_callback)
 
         # rate
@@ -76,90 +76,79 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         msg.data = self._joint_states.astype(float).tolist()
         self._joint_states_pub.publish(msg)
 
-        # calculate pose
-        pose = PoseStamped()
-        if self._transform_source == 'zed':
-            pose = self._zed_pose
-        elif self._transform_source == 'optitrack':
-            pose = self._optitrack_pose
-        elif self._transform_source == 'fwk':
-            self._tbot.fwk(self._joint_states, self._tbot.platform.T_world) # use previous transform as first guess for fwk
-            q = self._tbot.platform.T_world.q
-            r = self._tbot.platform.T_world.r
-            pose.pose.position.x = r[0]
-            pose.pose.position.y = r[1]
-            pose.pose.position.z = r[2]
-            pose.pose.orientation.w = q[0]
-            pose.pose.orientation.x = q[1]
-            pose.pose.orientation.y = q[2]
-            pose.pose.orientation.z = q[3]
-        
-        # 2d mode
-        if self._mode_2d:
-            pose_array = TransformMatrix(self.pose2mat(pose.pose)).decompose()
-            pose_array[3] = 0 # set x rotation to 0
-            pose_array[4] = 0 # set y rotation to 0
-            pose_matrix = TransformMatrix(pose_array)
-
-            pose.pose.position.z = float(self._fixed_z_value)
-            pose.pose.orientation.w = pose_matrix.q[0]
-            pose.pose.orientation.x = pose_matrix.q[1]
-            pose.pose.orientation.y = pose_matrix.q[2]
-            pose.pose.orientation.z = pose_matrix.q[3]
-
-        # publish pose
-        pose.header.stamp = self.get_clock().now().to_msg()
-        pose.header.frame_id = 'map'
-        self._pose_pub.publish(pose)
-
-        # publish transform
+        # calculate transform
         transform = TransformStamped()
-        transform.transform.translation.x = pose.pose.position.x
-        transform.transform.translation.y = pose.pose.position.y
-        transform.transform.translation.z = pose.pose.position.z
-        transform.transform.rotation.w = pose.pose.orientation.w
-        transform.transform.rotation.x = pose.pose.orientation.x
-        transform.transform.rotation.y = pose.pose.orientation.y
-        transform.transform.rotation.z = pose.pose.orientation.z
-        transform.header.stamp = pose.header.stamp
+        try:
+            if self._transform_source == 'zed':
+                transform = self._tf_buffer.lookup_transform(target_frame = 'map', source_frame = self._zed_frame, time = rclpy.time.Time())
+            elif self._transform_source == 'optitrack':
+                transform = self._tf_buffer.lookup_transform(target_frame = 'map', source_frame = self._optitrack_frame, time = rclpy.time.Time())
+            elif self._transform_source == 'fwk':
+                for gripper in self._tbot.grippers:
+                    transform = self._tf_buffer.lookup_transform(target_frame = 'map', source_frame = gripper.name, time = rclpy.time.Time())
+                    gripper.T_local = TransformMatrix(self.transform2mat(transform))
+                transform_matrix = self._tbot.fwk(self._joint_states, self._tbot.platform.T_local) 
+                transform.header.stamp = self.get_clock().now().to_msg()
+                transform.transform.translation.x = transform_matrix.x
+                transform.transform.translation.y = transform_matrix.y
+                transform.transform.translation.z = transform_matrix.z
+                transform.transform.rotation.w = transform_matrix.q[0]
+                transform.transform.rotation.x = transform_matrix.q[1]
+                transform.transform.rotation.y = transform_matrix.q[2]
+                transform.transform.rotation.z = transform_matrix.q[3]
+            # 2d mode
+            if self._mode_2d:
+                transform_array = TransformMatrix(self.transform2mat(transform.transform)).decompose()
+                transform_array[3] = 0 # set x rotation to 0
+                transform_array[4] = 0 # set y rotation to 0
+                transform_matrix = TransformMatrix(transform_array)
+
+                transform.transform.translation.z = float(self._fixed_z_value)
+                transform.transform.rotation.w = transform_matrix.q[0]
+                transform.transform.rotation.x = transform_matrix.q[1]
+                transform.transform.rotation.y = transform_matrix.q[2]
+                transform.transform.rotation.z = transform_matrix.q[3]
+            # set tetherbot platform to current transform
+            self._tbot.platform.T_local = TransformMatrix(self.transform2mat(transform.transform))
+        except Exception as exc:
+            self.get_logger().error('Look up transform failed: ' + str(exc), skip_first = True, throttle_duration_sec = 3)
+
         transform.header.frame_id = 'map'
         transform.child_frame_id = self._tbot.platform.name
         self._tf_broadcaster.sendTransform(transform)
 
-        # publish transform source
-        msg = String()
-        msg.data = self._transform_source
-        self._transform_source_pub.publish(msg)
-
-        # update tbot object
-        self._tbot.platform.T_world = TransformMatrix(self.pose2mat(pose.pose))
+        # publish pose
+        pose = PoseStamped()
+        pose.pose.position.x = transform.transform.translation.x 
+        pose.pose.position.y = transform.transform.translation.y 
+        pose.pose.position.z = transform.transform.translation.z 
+        pose.pose.orientation.w = transform.transform.rotation.w
+        pose.pose.orientation.x = transform.transform.rotation.x
+        pose.pose.orientation.y = transform.transform.rotation.y
+        pose.pose.orientation.z = transform.transform.rotation.z
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.header.frame_id = 'map'
+        self._pose_pub.publish(pose)
 
     def slow_timer_callback(self):
 
+        # publish stability
         msg = Float64Stamped()
         msg.stamp = self.get_clock().now().to_msg()
         try:
             msg.data = float(self._tbot.stability()[0])
         except:
             msg.data = float(-1)
-
         self._stability_pub.publish(msg)
 
-    def gripper_pose_sub_callback(self, msg: PoseStamped, i: int):
-
-        self._tbot.grippers[i].T_local = TransformMatrix(self.pose2mat(msg.pose))
+        # publish transform source
+        msg = String()
+        msg.data = self._transform_source
+        self._transform_source_pub.publish(msg)
 
     def motor_position_sub_callback(self, msg: Float64Stamped, i: int):
 
         self._joint_states[i] = msg.data
-
-    def zed_pose_sub_callback(self, msg: PoseStamped):
-            
-        self._zed_pose = msg
-
-    def optitrack_pose_sub_callback(self, msg: PoseStamped):
-
-        self._optitrack_pose = msg
         
     def set_transform_source_callback(self, request: SetString.Request, response: SetString.Response) -> SetString.Response:
         
@@ -185,18 +174,17 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
                 if self._set_pose_cli.service_is_ready():
                     start_time = self.get_clock().now().seconds_nanoseconds()[0]
                     cli_request = SetPose.Request()
-                    T = TransformMatrix([self._optitrack_pose.pose.position.x,
-                                         self._optitrack_pose.pose.position.y,
-                                         self._optitrack_pose.pose.position.z,
-                                         self._optitrack_pose.pose.orientation.w,
-                                         self._optitrack_pose.pose.orientation.x,
-                                         self._optitrack_pose.pose.orientation.y,
-                                         self._optitrack_pose.pose.orientation.z])
-                    cli_request.pos = T.decompose()[:3].astype(float).tolist()
-                    cli_request.orient = np.radians(T.decompose()[3:]).astype(float).tolist()
-
-                    future = self._set_pose_cli.call_async(cli_request)
-                    state = 2
+                    try:
+                        transform = self._tf_buffer.lookup_transform(target_frame = 'map', source_frame = self._optitrack_frame, time = rclpy.time.Time())
+                        transform_matrix = TransformMatrix(self.transform2mat(transform.transform))
+                        cli_request.pos = transform_matrix.decompose()[:3].astype(float).tolist()
+                        cli_request.orient = np.radians(transform_matrix.decompose()[3:]).astype(float).tolist()
+                        future = self._set_pose_cli.call_async(cli_request)
+                        state = 2
+                    except Exception as exc:
+                        response.success = False
+                        self.get_logger().error('Calibrate zed pose: Look up transform failed: ' + str(exc))
+                        state = 99
                 else:
                     state = 1
 

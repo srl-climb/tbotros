@@ -31,21 +31,13 @@ class PlatformControllerNode(BaseControllerNode):
                                                      'motor7/faulhaber_motor',
                                                      'motor8/faulhaber_motor',
                                                      'motor9/faulhaber_motor',])
-        
-        # by default the gripper parent is the hold, but we set it to the world/map
-        # this way T_local gets referenced to the world/map and not to the hold frame
-        for gripper in self._tbot.grippers:
-            gripper.parent = self._tbot
 
         # services
         self.create_service(Tension, self.get_name() + '/tension_gripper_tethers', self.tension_gripper_tethers_srv_callback)
+
         # publishers
         self._tether_tension_pub = self.create_publisher(BoolArray, self.get_name() + '/tether_tension', 1)
-        # timers
-        self.create_timer(0.5, self.pub_timer)
-        # subscriptions
-        for i in range(self._tbot.k):
-            self.create_subscription(PoseStamped, self._tbot.grippers[i].name + '/gripper_state_publisher/pose', lambda msg, i=i: self.gripper_pose_sub_callback(msg, i), 1)
+
         # actions
         self.create_action_server(EmptyAction, self.get_name() + '/calibrate_tether_lengths', 
                                   execute_callback = self.calibrate_tether_lengths_execute_callback,
@@ -54,15 +46,17 @@ class PlatformControllerNode(BaseControllerNode):
         self._move_motor_clis: list[ActionClient] = []
         for i in range(self._tbot.m):
             self._move_motor_clis.append(self.create_action_client(MoveMotor, 'motor' + str(i) + '/faulhaber_motor/move'))
-        self._rate = self.create_rate(10)
+
+        # rates
+        self._calibrate_action_rate = self.create_rate(10)
         
         # length parameters of untensioned/tensioned tethers
         self._untension_length = 0.01 # in meter
-        self._tension_length = -0.001
+        self._tension_length = 0.0
 
         # lock/flag to ensure only one action server runs at a given time
-        self._lock = Lock()
-        self._busy = False
+        self._calibrate_action_lock = Lock()
+        self._calibrate_action_busy = False
 
     def control_function(self, target_pose: Pose) -> np.ndarray:
 
@@ -71,11 +65,7 @@ class PlatformControllerNode(BaseControllerNode):
         qs = qs + self._untension_length * np.logical_not(self._tbot.tensioned) + self._tbot.tensioned * self._tension_length
 
         return qs
-    
-    def gripper_pose_sub_callback(self, msg: PoseStamped, i: int):
-
-        self._tbot.grippers[i].T_local = TransformMatrix(self.pose2mat(msg.pose))
-    
+       
     def tension_gripper_tethers_srv_callback(self, request: Tension.Request, response = Tension.Response) -> Tension.Response:
 
         if request.value: # True -> tension tether
@@ -91,7 +81,9 @@ class PlatformControllerNode(BaseControllerNode):
 
         return response
 
-    def pub_timer(self):
+    def watchdog_loop(self):
+        
+        super().watchdog_loop()
 
         msg = BoolArray()
         msg.data = self._tbot.tensioned.astype(bool).tolist()
@@ -103,7 +95,7 @@ class PlatformControllerNode(BaseControllerNode):
         state = 0
 
         while True:
-            self._rate.sleep()
+            self._calibrate_action_rate.sleep()
 
             # initialize
             if state == 0:
@@ -162,8 +154,8 @@ class PlatformControllerNode(BaseControllerNode):
                 goal_handle.canceled()
                 state = 99
         
-        with self._lock:
-            self._busy = False
+        with self._calibrate_action_lock:
+            self._calibrate_action_busy = False
 
         return EmptyAction.Result()
     
@@ -173,21 +165,21 @@ class PlatformControllerNode(BaseControllerNode):
     
     def calibrate_tether_lengths_goal_callback(self, _):
 
-        with self._lock:
-            if self._busy:
+        with self._calibrate_action_lock:
+            if self._calibrate_action_busy:
                 return GoalResponse.REJECT
             else:
-                self._busy = True
+                self._calibrate_action_busy = True
                 return GoalResponse.ACCEPT
+
 
 def main(args = None):
 
     rclpy.init(args = args)
     try:
         node = PlatformControllerNode()
-        executor = MultiThreadedExecutor()
         try:
-            rclpy.spin(node, executor = executor)
+            rclpy.spin(node, executor = MultiThreadedExecutor())
         finally:
             node.destroy_node()
     except KeyboardInterrupt:
@@ -197,26 +189,3 @@ def main(args = None):
 
 if __name__ == '__main__':
     main()
-
-
-""" if all([cli.server_is_ready() for cli in self._move_motor_clis]):
-                    try:
-                        tethervectors: list[Vector3] = []
-                        for i in range(self._tbot.m):
-                            tethervectors.append(self._tf_buffer.lookup_transform(
-                                target_frame = self._tbot.tethers[i].anchorpoints[0].name,
-                                source_frame = self._tbot.tethers[i].anchorpoints[1].name,
-                                time = rclpy.time.Time()).transform.translation)
-                    except:
-                        self.get_logger().info('Callibrate tether lengths: Aborted, lookup transform failed')
-                        goal_handle.abort()
-                        state = 99
-                    else:
-                        for tethervector, cli in zip(tethervectors, self._move_motor_clis):
-                            cli_goal = MoveMotor.Goal()
-                            cli_goal.homing_offset = float(sqrt(tethervector.x**2 + tethervector.y**2 + tethervector.z**2))
-                            cli_goal.mode = 4
-                            send_goal_futures.append(cli.send_goal_async(cli_goal))
-                        state = 2
-                else:
-                    state = 1 """
