@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+from tbotlib import TransformMatrix
 from typing import Callable
 from geometry_msgs.msg import Pose
 from tbotlib import TransformMatrix
@@ -275,18 +276,22 @@ class TkPoseLabelFrame(TkLabelFrame):
 
         label = TkLabel(master = self, text = 'Orientation:')
         label.grid(row = 1, column = 0)
-        self.rot_label = TkArrayLabel(master = self, length = 4, digits = 3)
+        self.rot_label = TkArrayLabel(master = self, length = 3, digits = 3)
         self.rot_label.grid(row = 1, column = 1)
 
     def update_data(self, value: Pose):
 
-        self.pos_label.update_data([value.position.x, 
-                                    value.position.y, 
-                                    value.position.z])
-        self.rot_label.update_data([value.orientation.w, 
-                                    value.orientation.x, 
-                                    value.orientation.y, 
-                                    value.orientation.z])
+        
+        T = TransformMatrix([value.position.x,
+                             value.position.y,
+                             value.position.z,
+                             value.orientation.w, 
+                             value.orientation.x, 
+                             value.orientation.y, 
+                             value.orientation.z])
+        
+        self.pos_label.update_data([T.x, T.y, T.z])
+        self.rot_label.update_data([T.theta_x, T.theta_y, T.theta_z])
         
 class TkPoseEntryFrame(TkLabelFrame):
 
