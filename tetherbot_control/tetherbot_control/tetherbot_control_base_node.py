@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import numpy as np
 
+from rclpy.time import Time
 from rclpy_wrapper.node import Node2
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from tf2_ros.transform_broadcaster import TransformBroadcaster
 from geometry_msgs.msg import Vector3, Quaternion, Transform, Pose
+from tbotlib import TransformMatrix, TbTetherbot
 import quaternion as qu
 
 #sys.path.append(os.path.join(get_package_prefix('tetherbot_control'), 'lib/python3.8/site-packages/tetherbot_control'))
@@ -22,12 +24,35 @@ class BaseNode(Node2):
         self.declare_parameter('config_file', '/home/srl-orin/ros2_ws/src/tbotros_description/tbotros_description/desc/tetherbot/tetherbot_light.pkl')
         self._config_file = self.get_parameter('config_file').get_parameter_value().string_value
         self.get_logger().info('config file: ' + str(self._config_file))
-        # tf buffer
+
+        # tf objects
         self._tf_buffer = Buffer()
-        # tf listener
         self._tf_listener = TransformListener(self._tf_buffer, self)
-        # tf broadcaster
         self._tf_broadcaster = TransformBroadcaster(self)
+
+        # tbotlib object for kinematics
+        self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
+        # by default the gripper parent is the hold, but we set it to the world/map
+        # this way T_local gets referenced to the world/map and not to the hold frame
+        for gripper in self._tbot.grippers:
+            gripper.parent = self._tbot
+
+    def lookup_tbot_transforms(self):
+
+        try:
+            time = Time()
+            transform = self._tf_buffer.lookup_transform(source_frame = self._tbot.platform.name, 
+                                                         target_frame = 'map', 
+                                                         time = time).transform
+            self._tbot.platform.T_local = TransformMatrix(self.transform2mat(transform))
+            
+            for gripper in self._tbot.grippers:
+                transform = self._tf_buffer.lookup_transform(source_frame = gripper.name,
+                                                             target_frame = 'map',
+                                                             time = time).transform
+                gripper.T_local = TransformMatrix(self.transform2mat(transform))
+        except Exception as exc:
+            self.get_logger().error('Look up transform failed: ' + str(exc), throttle_duration_sec = 3, skip_first = True)
 
 
     def relative_transform(self, transform0: Transform, transform1: Transform) -> Transform:

@@ -14,9 +14,6 @@ class VizualizationPublisherNode(BaseStatePublisherNode):
     def __init__(self):
 
         super().__init__(node_name = 'visualization_publisher')
-
-        # tb arm object for forward kinematics
-        self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
         
         # publishers
         self.tether_line_pub = self.create_publisher(MarkerArray, self.get_name() + '/tether_lines', 1)

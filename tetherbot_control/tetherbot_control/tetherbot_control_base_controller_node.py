@@ -11,7 +11,6 @@ from custom_actions.action import MoveTetherbot
 from std_srvs.srv import Empty
 from std_msgs.msg import Bool, Int8
 from geometry_msgs.msg import Pose, PoseStamped
-from tbotlib import TbTetherbot, TransformMatrix
 from .tetherbot_control_base_node import BaseNode
 
 
@@ -20,13 +19,6 @@ class BaseControllerNode(BaseNode):
     def __init__(self, default_motor_node_names: list[str] = None, **kwargs):
 
         super().__init__(**kwargs)
-
-        # tbotlib object for kinematics
-        self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
-        # by default the gripper parent is the hold, but we set it to the world/map
-        # this way T_local gets referenced to the world/map and not to the hold frame
-        for gripper in self._tbot.grippers:
-            gripper.parent = self._tbot
 
         # actions
         self.create_action_server(MoveTetherbot, self.get_name() + '/move', 
@@ -78,7 +70,7 @@ class BaseControllerNode(BaseNode):
 
     def control_loop(self):
 
-        self.lookup_transforms()
+        self.lookup_tbot_transforms()
 
         if self._control_enabled and self._target_pose is not None:
             
@@ -121,23 +113,6 @@ class BaseControllerNode(BaseNode):
     def control_function(self, target_pose: Pose) -> np.ndarray:
 
         pass
-
-    def lookup_transforms(self):
-
-        try:
-            time = Time()
-            transform = self._tf_buffer.lookup_transform(source_frame = self._tbot.platform.name, 
-                                                         target_frame = 'map', 
-                                                         time = time).transform
-            self._tbot.platform.T_local = TransformMatrix(self.transform2mat(transform))
-            
-            for gripper in self._tbot.grippers:
-                transform = self._tf_buffer.lookup_transform(source_frame = gripper.name,
-                                                             target_frame = 'map',
-                                                             time = time).transform
-                gripper.T_local = TransformMatrix(self.transform2mat(transform))
-        except Exception as exc:
-            self.get_logger().error('Look up transform failed: ' + str(exc), throttle_duration_sec = 3, skip_first = True)
 
     def enable_control_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
         

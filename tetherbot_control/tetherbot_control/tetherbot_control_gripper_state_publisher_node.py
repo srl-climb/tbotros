@@ -21,7 +21,6 @@ class GripperStatePublisherNode(BaseStatePublisherNode):
         self.declare_parameter('marker_name', 'marker0')
 
         # set parameters
-        self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
         self._marker_name = self.get_parameter('marker_name').get_parameter_value().string_value
         self.set_gripper(self.get_parameter('gripper_id').get_parameter_value().string_value)
         self.set_hold(self.get_parameter('hold_id').get_parameter_value().string_value)

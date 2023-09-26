@@ -15,7 +15,6 @@ class ArmStatePublisherNode(BaseStatePublisherNode):
         super().__init__(node_name = 'arm_state_publisher')
 
         # tb arm object for forward kinematics
-        self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
         self._arm = self._tbot.platform.arm
         self._joint_states = np.array([0,0,0], dtype=float) # in [deg, m, m]
         

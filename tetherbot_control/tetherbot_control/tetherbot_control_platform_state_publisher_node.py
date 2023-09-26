@@ -29,7 +29,6 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         self.declare_parameter('zed_frame', 'none')
 
         # set parameters
-        self._tbot: TbTetherbot = TbTetherbot.load(self._config_file)
         self._joint_states = self._tbot.l
         self._zed_pose = PoseStamped()
         self._optitrack_pose = PoseStamped()
@@ -136,8 +135,10 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         msg = Float64Stamped()
         msg.stamp = self.get_clock().now().to_msg()
         try:
+            self.lookup_tbot_transforms()
             msg.data = float(self._tbot.stability()[0])
-        except:
+        except Exception as exc:
+            self.get_logger().error('Publish stability: ' + str(exc), throttle_duration_sec = 3, skip_first = True)
             msg.data = float(-1)
         self._stability_pub.publish(msg)
 
