@@ -247,27 +247,22 @@ class SequencerNode(Node2):
                 # actions/services to conduct before executing the commands
                 for client in self._gripper_set_transform_source_clients:
                     handlers.append(TbSetStringServiceHandler(client, self._gripper_transform_source))
+                handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
 
                 # actions/services to conduct for each command
                 for command in commands:
                     # move platform
                     if type(command) is CommandMovePlatform:
-                        handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
                         handlers.append(TbMoveActionHandler(self._platform_move_client, command._targetposes))
-                        handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
                     # move arm
                     elif type(command) is CommandMoveArm:
-                        handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
                         handlers.append(TbEmptyServiceHandler(self._enable_arm_control_client))
                         handlers.append(TbMoveActionHandler(self._arm_move_client, command._targetposes))
                         handlers.append(TbEmptyServiceHandler(self._disable_arm_control_client))
-                        handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
                     # pick gripper
                     elif type(command) is CommandPickGripper:
-                        handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
                         handlers.append(TbTensionServiceHandler(self._tension_tethers_client, command._grip_idx, 0))
                         handlers.append(TbDelayHandler(3))
-                        handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
                         handlers.append(TbEmptyActionHandler(self._docking_close_client))
                         handlers.append(TbEmptyActionHandler(self._gripper_open_clients[command._grip_idx])) 
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_transform_source_clients[command._grip_idx], 'arm'))  
@@ -277,12 +272,13 @@ class SequencerNode(Node2):
                         handlers.append(TbEmptyActionHandler(self._docking_open_client))
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_hold_clients[command._grip_idx], str(command._hold_idx)))
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_transform_source_clients[command._grip_idx], self._gripper_transform_source))  
-                        handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
                         handlers.append(TbTensionServiceHandler(self._tension_tethers_client, command._grip_idx, 1))
                         handlers.append(TbDelayHandler(3))
-                        handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
                     else:
                         pass
+
+                # actions/services to conduct after executing the commands    
+                handlers.append(TbEmptyServiceHandler(self._disable_platform_control_client))
 
         return handlers
 
