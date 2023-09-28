@@ -10,7 +10,7 @@ from rclpy.action.server import ServerGoalHandle, GoalResponse, CancelResponse
 from custom_srvs.srv import Tension
 from custom_msgs.msg import BoolArray
 from custom_actions.action import MoveMotor, Empty as EmptyAction
-from std_srvs.srv import Trigger
+from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import PoseStamped, Pose
 from tbotlib import TransformMatrix
 from threading import Lock
@@ -65,6 +65,12 @@ class PlatformControllerNode(BaseControllerNode):
         qs = qs + self._untension_length * np.logical_not(self._tbot.tensioned) + self._tbot.tensioned * self._tension_length
 
         return qs
+    
+    def enable_control_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
+
+        self._target_pose = self.mat2pose(self._tbot.platform.T_world.T)
+
+        return super().enable_control_callback(request, response)
        
     def tension_gripper_tethers_srv_callback(self, request: Tension.Request, response = Tension.Response) -> Tension.Response:
 
@@ -108,8 +114,8 @@ class PlatformControllerNode(BaseControllerNode):
             # wait for services and send goal
             elif state == 1:
                 if all([cli.server_is_ready() for cli in self._move_motor_clis]):
-                    qs = self._tbot.ivk(TransformMatrix(self.pose2mat(self._actual_pose))) 
-                    for q, cli in zip(qs, self._move_motor_clis):
+                    self.lookup_tbot_transforms()
+                    for q, cli in zip(self._tbot.l, self._move_motor_clis):
                         cli_goal = MoveMotor.Goal()
                         cli_goal.homing_offset = float(q)
                         cli_goal.mode = 4

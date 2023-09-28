@@ -64,7 +64,6 @@ class BaseControllerNode(BaseNode):
 
         # parameters of the control loop
         self._target_pose: Pose = None
-        self._actual_pose: Pose = None
         self._target_pose_queue = []
         self._control_enabled = False
 
@@ -117,7 +116,6 @@ class BaseControllerNode(BaseNode):
     def enable_control_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
         
         self.get_logger().info('Enabling control')
-        self._target_pose = self._actual_pose
         self._control_enabled = True
 
         return response

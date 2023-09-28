@@ -188,6 +188,7 @@ def generate_launch_description():
                           ('/' + tbot.platform.arm.name + '/motor10/faulhaber_motor/mode', '/motor10/faulhaber_motor/mode'),
                           ('/' + tbot.platform.arm.name + '/motor11/faulhaber_motor/mode', '/motor11/faulhaber_motor/mode'),
                           ('/' + tbot.platform.arm.name + '/motor12/faulhaber_motor/mode', '/motor12/faulhaber_motor/mode'),
+                          ('/' + tbot.platform.arm.name + '/arm_controller/joint_states', '/' + tbot.platform.arm.name + '/arm_state_publisher/joint_states'),
                           ('/' + tbot.platform.arm.name + '/tf_static', '/tf_static'),
                           ('/' + tbot.platform.arm.name + '/tf', '/tf')]
             ))

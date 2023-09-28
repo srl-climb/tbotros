@@ -45,12 +45,17 @@ class BaseNode(Node2):
                                                          target_frame = 'map', 
                                                          time = time).transform
             self._tbot.platform.T_local = TransformMatrix(self.transform2mat(transform))
+
+            transform = self._tf_buffer.lookup_transform(source_frame = self._tbot.platform.name, 
+                                                         target_frame = 'map', 
+                                                         time = time).transform
             
             for gripper in self._tbot.grippers:
                 transform = self._tf_buffer.lookup_transform(source_frame = gripper.name,
                                                              target_frame = 'map',
                                                              time = time).transform
                 gripper.T_local = TransformMatrix(self.transform2mat(transform))
+
         except Exception as exc:
             self.get_logger().error('Look up transform failed: ' + str(exc), throttle_duration_sec = 3, skip_first = True)
 
@@ -112,8 +117,7 @@ class BaseNode(Node2):
                              pose.position.z])
         
         return T
-
-    
+  
     def mat2transform(self, T: np.ndarray) -> Transform:
 
         q = qu.as_float_array(qu.from_rotation_matrix(T[:3,:3]))
@@ -128,6 +132,21 @@ class BaseNode(Node2):
         transform.rotation.z = q[3]
 
         return transform
+    
+    def mat2pose(self, T: np.ndarray) -> Pose:
+
+        q = qu.as_float_array(qu.from_rotation_matrix(T[:3,:3]))
+
+        pose = Pose()
+        pose.position.x = T[0,3]
+        pose.position.y = T[1,3]
+        pose.position.z = T[2,3]
+        pose.orientation.w = q[0]
+        pose.orientation.x = q[1]
+        pose.orientation.y = q[2]
+        pose.orientation.z = q[3]
+
+        return pose
 
     @staticmethod
     def array2quaternion(array: np.ndarray) -> Quaternion:
