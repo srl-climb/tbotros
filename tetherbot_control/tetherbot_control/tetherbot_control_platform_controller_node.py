@@ -51,7 +51,7 @@ class PlatformControllerNode(BaseControllerNode):
         self._calibrate_action_rate = self.create_rate(10)
         
         # length parameters of untensioned/tensioned tethers
-        self._untension_length = 0.01 # in meter
+        self._untension_length = 0.02 # in meter
         self._tension_length = 0.0
 
         # lock/flag to ensure only one action server runs at a given time
@@ -61,8 +61,10 @@ class PlatformControllerNode(BaseControllerNode):
     def control_function(self, target_pose: Pose) -> np.ndarray:
 
         # calculate joint states
-        qs = self._tbot.ivk(TransformMatrix(self.pose2mat(target_pose)))
-        qs = qs + self._untension_length * np.logical_not(self._tbot.tensioned) + self._tbot.tensioned * self._tension_length
+        qs_target = self._tbot.ivk(TransformMatrix(self.pose2mat(target_pose))) # target tether lengths based on target pose of the platform and actual position of the grippers
+        qs_actual = self._tbot.ivk(self._tbot.platform.T_world) # actual tether lengths based on actual pose of the platform and actual position of the grippers
+        qs = (qs_actual + self._untension_length) * np.logical_not(self._tbot.tensioned) + (qs_target + self._tension_length) * self._tbot.tensioned
+        # Note: 'Actual tether length + untension length' is used when the tether is not tensioned to ensure that the tether is slack even if the target pose and actual pose differ
 
         return qs
     
