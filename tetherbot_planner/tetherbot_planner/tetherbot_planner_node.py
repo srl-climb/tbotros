@@ -24,7 +24,7 @@ class PlannerNode(Node2):
 
         super().__init__(node_name = 'planner')
 
-        self.declare_parameter('desc_file', '/home/climb/ros2_ws/src/tbotros_description/tbotros_description/desc/tetherbot/tetherbot_light.pkl')
+        self.declare_parameter('desc_file', '/home/climb/ros2_ws/src/tbotros_description/tbotros_description/desc/tetherbot/tetherbot.pkl')
         self._desc_file = self.get_parameter('desc_file').get_parameter_value().string_value
 
         self.declare_parameter('config_file', '/home/climb/ros2_ws/src/tbotros_config/tbotros_config/config/planner.yaml')
@@ -34,6 +34,8 @@ class PlannerNode(Node2):
         self._commands_file = self.get_parameter('commands_file').get_parameter_value().string_value
         
         self._tbot: TbTetherbot = TbTetherbot.load(self._desc_file)
+        self._tbot_light: TbTetherbot = TbTetherbot.load(self._desc_file)
+        self._tbot_light.remove_all_geometries()
 
         # intermediary objects
         self._tbot_platform_arm_qs = self._tbot.platform.arm.qs
@@ -94,17 +96,17 @@ class PlannerNode(Node2):
         msg.data = self._commands_saved
         self._commands_saved_pub.publish(msg)
 
-    def update_tbot(self):
+    def update_tbot(self, tbot: TbTetherbot):
 
-        self._tbot.platform.arm.qs = self._tbot_platform_arm_qs
-        self._tbot.platform.T_local = self._tbot_platform_T_local
+        tbot.platform.arm.qs = self._tbot_platform_arm_qs
+        tbot.platform.T_local = self._tbot_platform_T_local
+        self.get_logger().info(str(tbot.platform.T_local.decompose()))
+        for i in range(tbot.k):
+            tbot.grippers[i].T_world = tbot.grippers[i].T_world
 
-        for i in range(self._tbot.k):
-            self._tbot.grippers[i].T_world = self._tbot.grippers[i].T_world
-
-        for hold_name, gripper_index in zip(self._tbot_grippers_hold_name, range(self._tbot.k)):
-            hold_index = [hold.name for hold in self._tbot.wall.holds].index(hold_name)
-            self._tbot.place(gripper_index, hold_index, correct_pose = True)
+        for hold_name, gripper_index in zip(self._tbot_grippers_hold_name, range(tbot.k)):
+            hold_index = [hold.name for hold in tbot.wall.holds].index(hold_name)
+            tbot.place(gripper_index, hold_index, correct_pose = True)
 
     def arm_joint_states_sub_callback(self, msg: Float64Array):
         
@@ -158,7 +160,7 @@ class PlannerNode(Node2):
                 queue: ProcessQueue = None
                 state = 1
                 # update tbot to current configuration
-                self.update_tbot()
+                self.update_tbot(self._tbot_light)
                 if request.mode == 0: # plan platform
                     planner = self._platform2pose
                     self.get_logger().info(str(TransformMatrix(request.goal_pose).decompose()))
@@ -189,7 +191,7 @@ class PlannerNode(Node2):
                     kwargs = {'grip_idx': request.gripper_index}
                 elif request.mode == 6: # plan global
                     planner = self._global_planner
-                    kwargs = {'start': [self._tbot.wall.holds.index(gripper.parent) for gripper in self._tbot.grippers],
+                    kwargs = {'start': [self._tbot_light.wall.holds.index(gripper.parent) for gripper in self._tbot_light.grippers],
                               'goal': request.goal_configuration}
                 else:
                     goal_handle.abort()
@@ -203,7 +205,7 @@ class PlannerNode(Node2):
             elif state == 1:
                 queue = ProcessQueue(1)
                 process = Process(target = self.plan_process_func,
-                                  args = (queue, self._tbot, planner, kwargs))
+                                  args = (queue, self._tbot_light, planner, kwargs))
                 process.start()
                 state = 2
 
@@ -259,7 +261,7 @@ class PlannerNode(Node2):
             
     def display_state_srv_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
 
-        self.update_tbot()
+        self.update_tbot(self._tbot)
         
         thread = Thread(target = self.display_func, args = (self._tbot, self._stop_event, CommandList()))
         thread.start()
@@ -269,7 +271,7 @@ class PlannerNode(Node2):
     
     def display_commands_srv_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
         
-        self.update_tbot()
+        self.update_tbot(self._tbot)
 
         thread = Thread(target = self.display_func, args = (self._tbot, self._stop_event, self._commands))
         thread.start()
