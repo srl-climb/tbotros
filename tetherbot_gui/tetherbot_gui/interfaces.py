@@ -200,9 +200,8 @@ class PoseMsgInterface(MsgInterface[Pose]):
 
     def enqueue_message(self):
         
-        self.queue.put(self.label_frame.pos_label, [self.msg.position.x, self.msg.position.y, self.msg.position.z])
-        self.queue.put(self.label_frame.rot_label, [self.msg.orientation.w, self.msg.orientation.x, self.msg.orientation.y, self.msg.orientation.z])
- 
+        self.queue.put(self.label_frame, self.msg)
+
 
 class PoseStampedMsgInterface(MsgInterface[PoseStamped]):
 
@@ -213,9 +212,8 @@ class PoseStampedMsgInterface(MsgInterface[PoseStamped]):
         self.label_frame = label_frame
 
     def enqueue_message(self):
-        
-        self.queue.put(self.label_frame.pos_label, [self.msg.pose.position.x, self.msg.pose.position.y, self.msg.pose.position.z])
-        self.queue.put(self.label_frame.rot_label, [self.msg.pose.orientation.w, self.msg.pose.orientation.x, self.msg.pose.orientation.y, self.msg.pose.orientation.z])
+
+        self.queue.put(self.label_frame, self.msg.pose)
 
 
 class DigitalInputsMsgInterface(MsgInterface[DigitalInputs]):
@@ -508,10 +506,7 @@ class ActionInterface(ROSInterface, Generic[ActionType, GoalType, ResultType, Fe
     def execute_button_callback(self):
 
         with self.lock:
-            if self.thread is not None:
-                if self.thread.is_alive():
-                    self.stop_event.set()
-                    self.thread.join()
+            self.stop_thread()
             self.stop_event.clear()
             self.thread = Thread(target=self.execute_action, args=(self.get_goal(),))
             self.thread.start()
@@ -593,13 +588,21 @@ class ActionInterface(ROSInterface, Generic[ActionType, GoalType, ResultType, Fe
                 state = 96
             if goal_handle is not None:
                 self.enqueue_status(goal_handle.status)
-            sleep(0.1)
-    
-    def destroy(self):
+            sleep(0.05)
+
+    def stop_thread(self):
+
         if self.thread is not None:
             if self.thread.is_alive():
                 self.stop_event.set()
-                self.thread.join()   
+                self.thread.join(timeout=2.0)
+            if self.thread.is_alive():
+                self.master.get_logger().error('Thread still alive after attempted stop')
+
+    def destroy(self):
+        
+        self.stop_thread()
+
         return super().destroy()
 
 

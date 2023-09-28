@@ -2,24 +2,10 @@ from __future__ import annotations
 
 import tkinter as tk
 from tbotlib import TransformMatrix
-from typing import Callable
 from geometry_msgs.msg import Pose
 from tbotlib import TransformMatrix
 from .tkinter_tooltip import TkToolTip
-
-class TkTimer():
-    # A class representing a Tkinter-based timer
-
-    def __init__(self, parent: tk.Toplevel = None, callback: Callable = None, timeout_ms: int = 500) -> None:
-        self._parent = parent
-        self._callback = callback
-        self._timeout_ms = timeout_ms
-
-    def run(self):
-        self._callback()
-        self._parent.after(self._timeout_ms, self.run)
-        # Run the timer's callback function and schedule the next run after a specified timeout
-
+from rclpy.logging import get_logger
 
 class TkEntry(tk.Entry):
 
@@ -273,15 +259,14 @@ class TkPoseLabelFrame(TkLabelFrame):
         label.grid(row = 0, column = 0)
         self.pos_label = TkArrayLabel(master = self, length = 3, digits = 3)
         self.pos_label.grid(row = 0, column = 1)
-
-        label = TkLabel(master = self, text = 'Orientation:')
+       
+        label = TkLabel(master = self, text = 'Orientation (deg):')
         label.grid(row = 1, column = 0)
         self.rot_label = TkArrayLabel(master = self, length = 3, digits = 3)
         self.rot_label.grid(row = 1, column = 1)
 
     def update_data(self, value: Pose):
 
-        
         T = TransformMatrix([value.position.x,
                              value.position.y,
                              value.position.z,
@@ -289,9 +274,10 @@ class TkPoseLabelFrame(TkLabelFrame):
                              value.orientation.x, 
                              value.orientation.y, 
                              value.orientation.z])
-        
+     
         self.pos_label.update_data([T.x, T.y, T.z])
         self.rot_label.update_data([T.theta_x, T.theta_y, T.theta_z])
+        
         
 class TkPoseEntryFrame(TkLabelFrame):
 
@@ -314,7 +300,7 @@ class TkPoseEntryFrame(TkLabelFrame):
         self.z_entry = TkFloatEntry(master = label_frame)
         self.z_entry.grid(row = 2, column = 1)
 
-        label_frame = TkLabelFrame(master = self, text = 'Orientation')
+        label_frame = TkLabelFrame(master = self, text = 'Orientation (deg)')
         label_frame.grid(row = 1, column = 0)
         label = TkLabel(master = label_frame, text = 'X:')
         label.grid(row = 0, column = 0)
