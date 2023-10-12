@@ -136,7 +136,7 @@ class PlatformStatePublisherNode(BaseStatePublisherNode):
         msg.stamp = self.get_clock().now().to_msg()
         try:
             self.lookup_tbot_transforms()
-            msg.data = float(self._tbot.stability()[0])
+            msg.data = float(self._tbot.stability(ignore_tether_lengths=True)[0])
         except Exception as exc:
             self.get_logger().error('Publish stability: ' + str(exc), throttle_duration_sec = 3, skip_first = True)
             msg.data = float(-1)
