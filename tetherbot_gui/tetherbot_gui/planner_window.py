@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from tkinter import ttk
 from .tkinter_objects import TkLabelFrame, TkLabel, TkBoolLabel, TkButton, TkPoseEntryFrame, \
-    TkCancelButton, TkActionStatusLabel, TkOptionMenu, TkStringLabel, TkEntry
+    TkCancelButton, TkActionStatusLabel, TkOptionMenu, TkStringLabel, TkEntry, TkUIntEntry
 from .interfaces import BoolMsgInterface, EmptySrvInterface, StringMsgInterface, SetStringSrvInterface, \
-    TriggerSrvInterface, PlanTetherbotActionInterface
+    TriggerSrvInterface, PlanTetherbotActionInterface, DisplayCommandsSrvInterface
 from .window import Window
 
 if TYPE_CHECKING:
@@ -53,26 +53,31 @@ class PlannerWindow(Window):
 
         EmptySrvInterface(master=self, srv_name='planner/display_state', button=button)
 
-        button = TkButton(master=service_frame, text='Display Commands')
-        button.grid(row=1, column=0, columnspan=2)
+        label = TkLabel(master=service_frame, text='Speed:')
+        label.grid(row=1, column=0)
+        entry = TkUIntEntry(master=service_frame)
+        entry.grid(row=1, column=1)
 
-        EmptySrvInterface(master=self, srv_name='planner/display_commands', button=button)
+        button = TkButton(master=service_frame, text='Display Commands')
+        button.grid(row=2, column=0, columnspan=2)
+
+        DisplayCommandsSrvInterface(master=self, srv_name='planner/display_commands', button=button, entry=entry)
 
         label = TkLabel(master=service_frame, text='File Path:')
-        label.grid(row=2, column=0)
+        label.grid(row=3, column=0)
         entry = TkEntry(master=service_frame)
-        entry.grid(row=2, column=1)
+        entry.grid(row=3, column=1)
         button = TkButton(master=service_frame, text='Set Commands File')
-        button.grid(row=3, column=0, columnspan=2)
+        button.grid(row=4, column=0, columnspan=2)
 
         SetStringSrvInterface(master=self, srv_name='planner/set_commands_file', entry=entry, button=button)
 
         button = TkButton(master= service_frame, text='Save Commands')
-        button.grid(row=4, column=0, columnspan=2)
+        button.grid(row=5, column=0, columnspan=2)
         label = TkLabel(master=service_frame, text='Success: ')
         label.grid(row=5, column=0)
         label = TkBoolLabel(master=service_frame)
-        label.grid(row=5, column=1)
+        label.grid(row=6, column=1)
 
         TriggerSrvInterface(master=self, srv_name='planner/save_commands', success_label=label, button=button)
 

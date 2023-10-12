@@ -11,12 +11,12 @@ from multiprocessing import Process, Queue as ProcessQueue
 from threading import Lock, Event, Thread
 from custom_actions.action import PlanTetherbot
 from custom_msgs.msg import Float64Array
-from custom_srvs.srv import SetString
+from custom_srvs.srv import SetString, DisplayCommands
 from geometry_msgs.msg import PoseStamped, Pose
 from std_srvs.srv import Empty, Trigger
 from std_msgs.msg import Bool, Int64, String
 from tbotlib import TbTetherbot, GlobalPlanner, CommandList, TransformMatrix, TetherbotVisualizer, yaml2planner
-from time import sleep
+from time import time, sleep
 
 class PlannerNode(Node2):
 
@@ -61,7 +61,7 @@ class PlannerNode(Node2):
             self.create_subscription(String, self._tbot.grippers[i].name + '/gripper_state_publisher/hold_name', lambda msg, i=i: self.gripper_hold_name_sub_callback(msg, i), 1)
         # services
         self.create_service(Empty, self.get_name() + '/display_state', self.display_state_srv_callback)
-        self.create_service(Empty, self.get_name() + '/display_commands', self.display_commands_srv_callback)
+        self.create_service(DisplayCommands, self.get_name() + '/display_commands', self.display_commands_srv_callback)
         self.create_service(SetString, self.get_name() + '/set_commands_file', self.set_commands_file_srv_callback)
         self.create_service(Trigger, self.get_name() + '/save_commands', self.save_commands_srv_callback)
         # NOTE: Put set_commands and save_commands in same callback group to avoid changing the path while saving commands
@@ -267,23 +267,24 @@ class PlannerNode(Node2):
         thread.start()
         # NOTE: The open3d functions are run in a seperate thread as using a timer_callback leads to warnings and lag
 
-        return Empty.Response()
+        return response
     
-    def display_commands_srv_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
+    def display_commands_srv_callback(self, request: DisplayCommands.Request, response: DisplayCommands.Response) -> DisplayCommands.Response:
         
         self.update_tbot(self._tbot)
 
-        thread = Thread(target = self.display_func, args = (self._tbot, self._stop_event, self._commands))
+        thread = Thread(target = self.display_func, args = (self._tbot, self._stop_event, self._commands, request.speed, self._simulation_dt))
         thread.start()
         # NOTE: The open3d functions are run in a seperate thread as using a timer_callback leads to warnings and lag
-
-        return Empty.Response()    
+        
+        return response
     
     @staticmethod
-    def display_func(tbot: TbTetherbot, stop_event: Event, commands: CommandList):
+    def display_func(tbot: TbTetherbot, stop_event: Event, commands: CommandList, speed: int, simulation_dt: float):
 
         vi = TetherbotVisualizer(tbot)
         state = 0
+        start_time = time()
         i = 0
 
         while not stop_event.is_set() and vi.opened:
@@ -294,7 +295,10 @@ class PlannerNode(Node2):
                 else:
                     state = 4
             if state == 1:
-                done = commands[i].do(tetherbot=tbot, step=150)
+                current_time = time()
+                elapsed_time = current_time-start_time
+                start_time = current_time
+                done = commands[i].do(tetherbot=tbot, step=speed*int(elapsed_time/simulation_dt))
                 if done:
                     i = i + 1
                     state = 0

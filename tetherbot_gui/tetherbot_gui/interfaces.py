@@ -9,7 +9,7 @@ from std_msgs.msg import Bool, String, Float64, Int16, Int8
 from std_srvs.srv import Empty as EmptySrv, Trigger
 from geometry_msgs.msg import PoseStamped, Pose
 from custom_msgs.msg import Statusword, DigitalInputs, Float64Array, BoolArray, Float64Stamped, Int16Stamped
-from custom_srvs.srv import SetString, Tension, SerialSend
+from custom_srvs.srv import SetString, Tension, SerialSend, DisplayCommands
 from custom_actions.action import ExecuteSequence, MoveMotor, Empty as EmptyAction, PlanTetherbot
 from threading import Thread, Event, Lock
 from time import sleep
@@ -414,6 +414,22 @@ class SetStringSrvInterface(SrvInterface[SetString, SetString.Request, SetString
 
         request = SetString.Request()
         request.data = self.entry.get_data()
+        
+        return request
+    
+
+class DisplayCommandsSrvInterface(SrvInterface[DisplayCommands, DisplayCommands.Request, DisplayCommands.Response]):
+
+    def __init__(self, entry: TkUIntEntry = None, **kwargs):
+
+        super().__init__(srv_type=DisplayCommands, **kwargs) 
+        
+        self.entry = entry
+
+    def get_request(self) -> DisplayCommands.Request:
+
+        request = DisplayCommands.Request()
+        request.speed = self.entry.get_data()
         
         return request
     
