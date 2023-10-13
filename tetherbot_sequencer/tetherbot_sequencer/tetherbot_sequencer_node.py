@@ -12,7 +12,7 @@ from custom_srvs.srv import SetString, Tension
 from std_msgs.msg import Bool, String
 from std_srvs.srv import Empty as EmptyService
 from std_srvs.srv import Trigger
-from tbotlib import TbTetherbot, CommandMoveArm, CommandMovePlatform, CommandPickGripper, CommandPlaceGripper, CommandList
+from tbotlib import TbTetherbot, CommandMoveArm, CommandMovePlatform, CommandPickGripper, CommandPlaceGripper, CommandList, CommandTensionTethers
 from .handler import TbHandler, TbEmptyActionHandler, TbMoveActionHandler, TbSetStringServiceHandler, TbTensionServiceHandler, TbDelayHandler, TbEmptyServiceHandler
 
 class SequencerNode(Node2):
@@ -245,8 +245,6 @@ class SequencerNode(Node2):
 
             if commands:
                 # actions/services to conduct before executing the commands
-                for client in self._gripper_set_transform_source_clients:
-                    handlers.append(TbSetStringServiceHandler(client, self._gripper_transform_source))
                 handlers.append(TbEmptyServiceHandler(self._enable_platform_control_client))
 
                 # actions/services to conduct for each command
@@ -261,8 +259,6 @@ class SequencerNode(Node2):
                         handlers.append(TbEmptyServiceHandler(self._disable_arm_control_client))
                     # pick gripper
                     elif type(command) is CommandPickGripper:
-                        handlers.append(TbTensionServiceHandler(self._tension_tethers_client, command._grip_idx, 0))
-                        handlers.append(TbDelayHandler(3))
                         handlers.append(TbEmptyActionHandler(self._docking_close_client))
                         handlers.append(TbEmptyActionHandler(self._gripper_open_clients[command._grip_idx])) 
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_transform_source_clients[command._grip_idx], 'arm'))  
@@ -272,8 +268,9 @@ class SequencerNode(Node2):
                         handlers.append(TbEmptyActionHandler(self._docking_open_client))
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_hold_clients[command._grip_idx], str(command._hold_idx)))
                         handlers.append(TbSetStringServiceHandler(self._gripper_set_transform_source_clients[command._grip_idx], self._gripper_transform_source))  
-                        handlers.append(TbTensionServiceHandler(self._tension_tethers_client, command._grip_idx, 1))
-                        handlers.append(TbDelayHandler(3))
+                    # tension tethers
+                    elif type(command) is CommandTensionTethers:
+                        handlers.append(TbTensionServiceHandler(self._tension_tethers_client, command._grip_idx, command._value))
                     else:
                         pass
 
