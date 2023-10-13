@@ -75,7 +75,7 @@ class PlannerWindow(Window):
         button = TkButton(master= service_frame, text='Save Commands')
         button.grid(row=5, column=0, columnspan=2)
         label = TkLabel(master=service_frame, text='Success: ')
-        label.grid(row=5, column=0)
+        label.grid(row=6, column=0)
         label = TkBoolLabel(master=service_frame)
         label.grid(row=6, column=1)
 

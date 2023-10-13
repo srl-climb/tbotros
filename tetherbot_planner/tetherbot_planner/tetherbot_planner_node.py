@@ -16,7 +16,7 @@ from geometry_msgs.msg import PoseStamped, Pose
 from std_srvs.srv import Empty, Trigger
 from std_msgs.msg import Bool, Int64, String
 from tbotlib import TbTetherbot, GlobalPlanner, CommandList, TransformMatrix, TetherbotVisualizer, yaml2planner
-from time import time, sleep
+from time import time_ns, sleep
 
 class PlannerNode(Node2):
 
@@ -40,8 +40,9 @@ class PlannerNode(Node2):
         # intermediary objects
         self._tbot_platform_arm_qs = self._tbot.platform.arm.qs
         self._tbot_platform_T_local = self._tbot.platform.T_local
-        self._tbot_grippers_T_world: list[TransformMatrix] = []
-        self._tbot_grippers_hold_name: list[str] = []
+        self._tbot_grippers_T_world: list[TransformMatrix] = [gripper.T_world for gripper in self._tbot.grippers]
+        self._tbot_grippers_hold_name: list[str] = [self._tbot.wall.get_hold(gripper.parent.name).name for gripper in self._tbot.grippers]
+
         for gripper in self._tbot.grippers:
             self._tbot_grippers_T_world.append(gripper.T_world)
             self._tbot_grippers_hold_name.append('')
@@ -280,35 +281,43 @@ class PlannerNode(Node2):
         return response
     
     @staticmethod
-    def display_func(tbot: TbTetherbot, stop_event: Event, commands: CommandList, speed: int, simulation_dt: float):
+    def display_func(tbot: TbTetherbot, stop_event: Event, commands: CommandList, speed: int = 1, simulation_dt: float = 1):
 
         vi = TetherbotVisualizer(tbot)
+        speed = max(speed, 1)
         state = 0
-        start_time = time()
         i = 0
 
         while not stop_event.is_set() and vi.opened:
             if state == 0:
                 if i < len(commands):
                     commands[i].reset()
+                    start_time = time_ns() / 1000000000 * speed
                     state = 1
                 else:
                     state = 4
             if state == 1:
-                current_time = time()
-                elapsed_time = current_time-start_time
-                start_time = current_time
-                done = commands[i].do(tetherbot=tbot, step=speed*int(elapsed_time/simulation_dt))
-                if done:
-                    i = i + 1
-                    state = 0
+                current_time = time_ns() / 1000000000 * speed
+                # execute the simulation in real-time
+                if (current_time-start_time) >= simulation_dt:
+                    # calculate how many steps of dt to move forward in the display
+                    step = ((current_time-start_time)//simulation_dt) 
+                    # execute the command
+                    done = commands[i].do(tetherbot=tbot, step=int(step))
+                    if done:
+                        i = i + 1
+                        state = 0
+                    else:
+                        start_time = start_time + step * simulation_dt 
+                        state = 1
                 else:
                     state = 1
             elif state == 4:
                 sleep(0.1)
-                pass
             
             vi.update()  
+
+        vi.close()
             
     @staticmethod
     def plan_process_func(queue: ProcessQueue, tbot: TbTetherbot, planner: GlobalPlanner, kwargs: dict):                    
