@@ -31,7 +31,7 @@ class GripperControllerNode(Node2):
         self._lock = Lock()
         self._contactswitch = False
         self._user_confirmed = False
-        self._timeout_in_sec = 20 # must be longer than action duration of servo
+        self._timeout_in_sec = 60 # must be longer than action duration of servo
         self._current_action_id = -1
 
     def contactswitch_sub_callback(self, msg: Bool):
