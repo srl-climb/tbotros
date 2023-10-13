@@ -59,7 +59,9 @@ class PlatformControllerNode(BaseControllerNode):
         self._calibrate_action_busy = False
 
     def control_function(self, target_pose: Pose) -> np.ndarray:
-
+        
+        self.lookup_tbot_transforms()
+        
         # calculate joint states
         qs_target = self._tbot.ivk(TransformMatrix(self.pose2mat(target_pose))) # target tether lengths based on target pose of the platform and actual position of the grippers
         qs_actual = self._tbot.ivk(self._tbot.platform.T_world) # actual tether lengths based on actual pose of the platform and actual position of the grippers

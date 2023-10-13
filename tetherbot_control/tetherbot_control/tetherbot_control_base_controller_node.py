@@ -69,8 +69,6 @@ class BaseControllerNode(BaseNode):
 
     def control_loop(self):
 
-        self.lookup_tbot_transforms()
-
         if self._control_enabled and self._target_pose is not None:
             
             # get the next target pose if available

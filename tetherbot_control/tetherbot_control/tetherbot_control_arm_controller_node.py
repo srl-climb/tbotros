@@ -29,6 +29,10 @@ class ArmControllerNode(BaseControllerNode):
     
     def enable_control_callback(self, request: Empty.Request, response: Empty.Response) -> Empty.Response:
 
+        self.lookup_tbot_transforms()
+        # Note: do not use lookup_tbot_transform within the control function with open loop control
+        # it will lead to drift when the platform moves as a reaction to the arms movement
+
         self._target_pose = self.mat2pose(self._tbot.platform.arm.links[-1].T_world.T)
 
         return super().enable_control_callback(request, response)
