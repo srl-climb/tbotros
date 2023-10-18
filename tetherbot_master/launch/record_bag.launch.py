@@ -113,6 +113,7 @@ def generate_launch_description():
               '/zedm/zed_node/pose',
               '/optitrack/pose_publisher/platform_pose',
               '/optitrack/markers',
+              '/optitrack/other_markers',
               '/optitrack/rigid_bodies']
     
     bag_file =  os.path.expanduser('~') + '/ros2_ws/bag/' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '/'
